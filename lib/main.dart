@@ -13,10 +13,11 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart'; // Thư viện SharedPreferences
 
 void main() {
-  HttpOverrides.global = MyHttpOverrides(); // Bỏ qua chứng chỉ SSL
+  setupHttpOverrides();
   runApp(
     ChangeNotifierProvider(
-      create: (_) => CookieProvider(), // Cung cấp CookieProvider cho toàn bộ ứng dụng
+      create: (_) =>
+          CookieProvider(), // Cung cấp CookieProvider cho toàn bộ ứng dụng
       child: MyApp(),
     ),
   );
@@ -34,7 +35,9 @@ class MyApp extends StatelessWidget {
             theme: ThemeData(
               primarySwatch: Colors.blue,
             ),
-            home: Scaffold(body: Center(child: CircularProgressIndicator())), // Hiển thị loading
+            home: Scaffold(
+                body: Center(
+                    child: CircularProgressIndicator())), // Hiển thị loading
           );
         } else {
           return MaterialApp(
@@ -80,7 +83,8 @@ class _MainScreenState extends State<MainScreen> {
     String url = '$baseUrl/DangNhap/Logout';
 
     // Lấy cookie từ CookieProvider
-    String cookie = Provider.of<CookieProvider>(context, listen: false).cookie ?? '';
+    String cookie =
+        Provider.of<CookieProvider>(context, listen: false).cookie ?? '';
 
     // Gửi yêu cầu GET đến API đăng xuất
     try {
@@ -102,7 +106,8 @@ class _MainScreenState extends State<MainScreen> {
       } else {
         // Xử lý lỗi khi không thể đăng xuất
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi khi đăng xuất: ${response.reasonPhrase}')),
+          SnackBar(
+              content: Text('Lỗi khi đăng xuất: ${response.reasonPhrase}')),
         );
       }
     } catch (error) {
@@ -113,8 +118,10 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _onItemTapped(int index) {
-    if (index == 5) { // Đăng xuất là item thứ 6
-      _showLogoutConfirmationDialog(context); // Gọi phương thức hiển thị dialog xác nhận
+    if (index == 5) {
+      // Đăng xuất là item thứ 6
+      _showLogoutConfirmationDialog(
+          context); // Gọi phương thức hiển thị dialog xác nhận
     } else {
       setState(() {
         _selectedIndex = index; // Cập nhật chỉ số màn hình
@@ -193,11 +200,14 @@ class _MainScreenState extends State<MainScreen> {
 class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Scaffold( // Sử dụng Scaffold để tạo cấu trúc cho màn hình
-      appBar: AppBar( // Đặt AppBar vào trong thuộc tính appBar của Scaffold
+    return Scaffold(
+      // Sử dụng Scaffold để tạo cấu trúc cho màn hình
+      appBar: AppBar(
+        // Đặt AppBar vào trong thuộc tính appBar của Scaffold
         title: Text('Trang chủ'),
       ),
-      body: Center( // Đặt nội dung chính vào trong body của Scaffold
+      body: Center(
+        // Đặt nội dung chính vào trong body của Scaffold
         child: Text('dev by copecute'),
       ),
     );
@@ -209,6 +219,7 @@ class MyHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
     return super.createHttpClient(context)
-      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
   }
 }

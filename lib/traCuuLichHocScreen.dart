@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:hpc_students/config.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'cookie_provider.dart'; // Import CookieProvider
 import 'package:html/parser.dart' as html;
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
+import 'loginScreen.dart';
 
 class TraCuuLichHocScreen extends StatefulWidget {
   @override
@@ -11,56 +14,107 @@ class TraCuuLichHocScreen extends StatefulWidget {
 }
 
 class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
-  String? selectedYear; // Năm học được chọn
-  String? selectedWeek; // Tuần được chọn
-  List<Map<String, String>> weeks = []; // Danh sách tuần với cả value và text
-  String? htmlResponse; // Biến lưu trữ phản hồi HTML
-  String url = 'https://sinhvien.bachkhoahanoi.edu.vn/TraCuuLichHoc/DanhSachTuan'; // URL
-  String? cookie; // Cookie
-  Map<String, String> postData = {}; // Biến lưu trữ dữ liệu post
+  String? selectedWeek;
+  List<Map<String, String>> weeks = [];
+  String? htmlResponse;
+  String url = '$baseUrl/TraCuuLichHoc/DanhSachTuan';
+  String? cookie;
+  Map<String, String> postData = {};
+  bool isLoadingWeeks = false;
+  bool isLoadingSchedule = false;
+  DateTime? selectedDate; // Biến lưu trữ ngày được chọn
 
   @override
   void initState() {
     super.initState();
+    // Tự động load dữ liệu cho ngày hiện tại khi mở màn hình
+    selectedDate = DateTime.now();
+    fetchWeeks(getCurrentAcademicYear()); // Lấy danh sách tuần với năm hiện tại
+    calculateWeekFromDate(selectedDate!); // Tính tuần cho ngày hiện tại
   }
 
   Future<void> fetchWeeks(String year) async {
+    setState(() {
+      isLoadingWeeks = true;
+    });
+
     final response = await http.get(
-      Uri.parse('https://sinhvien.bachkhoahanoi.edu.vn/TraCuuLichHoc/LoadTuanThu?Nam_hoc=$year'),
+      Uri.parse('$baseUrl/TraCuuLichHoc/LoadTuanThu?Nam_hoc=$year'),
       headers: {
-        'Cookie': Provider.of<CookieProvider>(context, listen: false).getCookie() ?? '', // Thêm cookie vào header
+        'Cookie': Provider.of<CookieProvider>(context, listen: false).getCookie() ?? '',
       },
     );
 
     if (response.statusCode == 200) {
       setState(() {
-        weeks = []; // Xóa danh sách tuần hiện tại
-
-        // Phân tích HTML và lấy thông tin tuần
+        weeks = [];
         var document = html.parse(response.body);
         var options = document.querySelectorAll('select#cmbTuanThu option');
 
-        // Thêm tuần vào danh sách
         for (var option in options) {
           var value = option.attributes['value'];
           var text = option.text;
-          if (value != '-1') { // Bỏ qua tùy chọn "--- Chọn tuần ---"
-            weeks.add({'value': value!, 'text': text}); // Lưu trữ cả value và text
+          if (value != '-1') {
+            weeks.add({'value': value!, 'text': text});
           }
         }
+        isLoadingWeeks = false;
       });
+
+      // Tự động fetch schedule khi có dữ liệu tuần và năm học
+      if (weeks.isNotEmpty) {
+        calculateWeekFromDate(selectedDate!);
+      }
     } else {
+      setState(() {
+        isLoadingWeeks = false;
+      });
       throw Exception('Failed to load weeks');
     }
   }
 
-  Future<void> fetchSchedule() async {
-    cookie = Provider.of<CookieProvider>(context, listen: false).getCookie() ?? ''; // Lấy cookie
+  // Hàm tính tuần dựa trên ngày đã chọn
+  void calculateWeekFromDate(DateTime date) {
+    for (var week in weeks) {
+      var weekText = week['text']!;
+      var dates = weekText.split('[')[1].split(']')[0].split('--');
+      var startDate = DateFormat('dd/MM/yyyy').parse(dates[0].split('Từ ')[1].trim());
+      var endDate = DateFormat('dd/MM/yyyy').parse(dates[1].split('Đến ')[1].trim());
 
-    // Dữ liệu POST để tra cứu lịch học
+      if (date.isAfter(startDate.subtract(Duration(days: 1))) && date.isBefore(endDate.add(Duration(days: 1)))) {
+        setState(() {
+          selectedWeek = week['value'];
+        });
+        break;
+      }
+    }
+
+    // Tự động fetch schedule khi có ngày và tuần
+    if (selectedWeek != null) {
+      fetchSchedule();
+    }
+  }
+
+  Future<void> fetchSchedule() async {
+    setState(() {
+      isLoadingSchedule = true;
+    });
+
+    String? cookie = Provider.of<CookieProvider>(context, listen: false).getCookie();
+    if (cookie == null || cookie.isEmpty) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+      );
+      setState(() {
+        isLoadingSchedule = false;
+      });
+      return;
+    }
+
     postData = {
-      'Nam_hoc': selectedYear ?? '',
-      'Tuan_thu': selectedWeek ?? '', // Giữ nguyên, selectedWeek chứa value
+      'Nam_hoc': getCurrentAcademicYear(),
+      'Tuan_thu': selectedWeek ?? '',
     };
 
     final response = await http.post(
@@ -74,11 +128,20 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
 
     if (response.statusCode == 200) {
       setState(() {
-        htmlResponse = response.body; // Lưu trữ phản hồi HTML
+        htmlResponse = response.body;
+        isLoadingSchedule = false;
       });
     } else {
+      setState(() {
+        isLoadingSchedule = false;
+      });
       throw Exception('Failed to fetch schedule');
     }
+  }
+
+  String getCurrentAcademicYear() {
+    int year = selectedDate!.year;
+    return year.toString() + '-' + (year + 1).toString(); // Ví dụ: 2024-2025
   }
 
   @override
@@ -91,68 +154,48 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Chọn năm học
-            DropdownButtonFormField<String>(
-              decoration: InputDecoration(labelText: 'Năm học'),
-              items: List.generate(9, (index) {
-                int year = DateTime.now().year - 8 + index;
-                return DropdownMenuItem(
-                  value: '$year-${year + 1}',
-                  child: Text('$year-${year + 1}'),
+            // Input date picker
+            TextFormField(
+              decoration: InputDecoration(labelText: 'Chọn ngày'),
+              readOnly: true,
+              onTap: () async {
+                DateTime? pickedDate = await showDatePicker(
+                  context: context,
+                  initialDate: selectedDate ?? DateTime.now(),
+                  // Thiết lập firstDate là 8 năm trước
+                  firstDate: DateTime(DateTime.now().year - 8, 8, 5),
+                  // Thiết lập lastDate là 1 năm sau
+                  lastDate: DateTime(DateTime.now().year + 1, 8, 3),
                 );
-              }),
-              onChanged: (value) {
-                setState(() {
-                  selectedYear = value;
-                  selectedWeek = null; // Đặt lại tuần khi năm học thay đổi
-                });
-                if (value != null) {
-                  fetchWeeks(value); // Gọi hàm để lấy tuần khi chọn năm học
+                if (pickedDate != null) {
+                  setState(() {
+                    selectedDate = pickedDate;
+                  });
+                  calculateWeekFromDate(pickedDate);
                 }
               },
-            ),
-            // Chọn tuần
-            DropdownButtonFormField<Map<String, String>>(
-              decoration: InputDecoration(labelText: 'Tuần'),
-              items: weeks.map((week) {
-                return DropdownMenuItem<Map<String, String>>(
-                  value: week,
-                  child: Text(week['text']!), // Hiển thị văn bản tuần
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  selectedWeek = value?['value']; // selectedWeek sẽ lưu trữ value
-                });
-              },
+              controller: TextEditingController(
+                text: selectedDate != null ? DateFormat('dd/MM/yyyy').format(selectedDate!) : '',
+              ),
             ),
             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                if (selectedYear != null && selectedWeek != null) {
-                  fetchSchedule(); // Gọi hàm để tra cứu lịch học
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Vui lòng chọn năm học và tuần')),
-                  );
-                }
-              },
-              child: Text('Tra cứu lịch học'),
+            // Hiển thị tuần tương ứng với ngày chọn
+            Text(
+              selectedWeek != null
+                  ? weeks.firstWhere((week) => week['value'] == selectedWeek)['text']!
+                  : '',
             ),
             SizedBox(height: 20),
-            // Hiển thị thông tin URL, cookie và postData
-            Text(' ', style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: 5),
-            Text('Cookie: ${cookie ?? ''}', style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: 5),
-            Text('Dữ liệu POST: ${postData.isNotEmpty ? postData.toString() : 'Chưa có dữ liệu'}', style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: 20),
-            // Hiển thị kết quả lịch học nếu có
-            if (htmlResponse != null)
+            if (isLoadingSchedule)
+              CircularProgressIndicator()
+            else if (htmlResponse != null)
               Expanded(
                 child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal, // Cho phép cuộn ngang
-                  child: HtmlWidget(htmlResponse!), // Hiển thị nội dung HTML
+                  scrollDirection: Axis.vertical,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: HtmlWidget(htmlResponse!),
+                  ),
                 ),
               ),
           ],

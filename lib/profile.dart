@@ -26,52 +26,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    // Kiểm tra nếu thông tin đã được tải trước đó
     if (_hoTen.isEmpty) {
-      _fetchData(); // Nếu chưa có thông tin, tải dữ liệu
+      _fetchData();
     } else {
       setState(() {
-        _isLoading = false; // Nếu đã có thông tin, không cần tải lại
+        _isLoading = false;
       });
     }
   }
 
   Future<void> _fetchData() async {
-    // Lấy cookie từ CookieProvider
     String? cookie = Provider.of<CookieProvider>(context, listen: false).getCookie();
 
-    // Nếu không có cookie, chuyển hướng về màn hình đăng nhập
     if (cookie == null || cookie.isEmpty) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => LoginScreen()), // Chuyển hướng đến LoginScreen
+        MaterialPageRoute(builder: (context) => LoginScreen()),
       );
       return;
     }
 
     final url = '$baseUrl/SinhVien/ThongTinSinhVien';
-
-    // Tạo HttpClient không kiểm tra SSL
     final HttpClient httpClient = HttpClient()
       ..badCertificateCallback =
           (X509Certificate cert, String host, int port) => true;
 
-    // Tạo IOClient với HttpClient tùy chỉnh
     final ioClient = IOClient(httpClient);
 
     try {
       final response = await ioClient.get(
         Uri.parse(url),
         headers: {
-          'Cookie': cookie, // Gửi cookie để xác thực
+          'Cookie': cookie,
         },
       );
 
       if (response.statusCode == 200) {
-        // Phân tích HTML
         var document = htmlParser.parse(response.body);
 
-        // Lấy thông tin sinh viên từ các input
         _hoTen = document.getElementById("Ho_ten")?.attributes['value'] ?? '';
         _dienThoai = document.getElementById("Dienthoai_canhan")?.attributes['value'] ?? '';
         _ngaySinh = document.getElementById("Ngay_sinh")?.attributes['value'] ?? '';
@@ -80,16 +72,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _cmnd = document.getElementById("CMND")?.attributes['value'] ?? '';
 
         setState(() {
-          _isLoading = false; // Tắt trạng thái loading
+          _isLoading = false;
         });
       } else {
         setState(() {
-          _isLoading = false; // Tắt trạng thái loading
+          _isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
-        _isLoading = false; // Tắt trạng thái loading
+        _isLoading = false;
       });
     } finally {
       ioClient.close();
@@ -103,13 +95,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: Text('Thông Tin Sinh Viên'),
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator()) // Hiển thị trạng thái loading
+          ? Center(child: CircularProgressIndicator())
           : Padding(
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Center(
+                child: CircleAvatar(
+                  radius: 50, // Kích thước avatar
+                  backgroundImage: AssetImage('assets/avatar.png'), // Ảnh avatar
+                ),
+              ),
+              SizedBox(height: 16),
               Text(
                 'Họ và Tên: $_hoTen',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
