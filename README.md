@@ -23,7 +23,7 @@ Hướng dẫn cài đặt dự án trên máy tính của bạn:
 
 1. Clone repository:
    ```bash
-   git clone [https://github.com/username/repo.git](https://github.com/copecute/HPC-Students.git)
+   git clone https://github.com/username/repo.git](https://github.com/copecute/HPC-Students.git
    ```
 2. Di chuyển vào thư mục dự án:
    ```bash
@@ -49,3 +49,6 @@ flutter run
 - **Màn Hình Tra Cứu Lịch Học**: Hiển thị lịch học theo tuần.
 - **Màn Hình Tra Cứu Điểm Rèn Luyện**: Hiển thị điểm rèn luyện của sinh viên.
 - ...
+
+### Liên Hệ
+Nếu bạn có bất kỳ câu hỏi nào, hãy liên hệ với tôi qua email: copesocute@gmail.com.
