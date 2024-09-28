@@ -323,18 +323,38 @@ class BlogSearchDelegate extends SearchDelegate<String> {
 
   @override
   Widget buildSuggestions(BuildContext context) {
+    final suggestions = [
+      'Flutter',
+      'Dart',
+      'Mobile Development',
+      'State Management',
+      'APIs',
+      // Thêm nhiều từ khóa gợi ý khác nếu cần
+    ];
+
+    final filteredSuggestions = suggestions
+        .where((suggestion) => suggestion.toLowerCase().contains(query.toLowerCase()))
+        .toList();
+
     return ListView(
-      children: [
-        ListTile(
-          title: Text('Search for: ${query.isNotEmpty ? query : '...' }'),
-        ),
-      ],
+      children: filteredSuggestions.map((suggestion) {
+        return ListTile(
+          title: Text(suggestion),
+          onTap: () {
+            searchController.text = suggestion; // Đặt từ khóa đã chọn vào controller
+            onSearch(suggestion); // Gọi hàm tìm kiếm với từ khóa đã chọn
+            close(context, suggestion); // Đóng hộp thoại tìm kiếm
+          },
+        );
+      }).toList(),
     );
   }
 
   @override
   Widget buildResults(BuildContext context) {
+    // Gọi hàm tìm kiếm với từ khóa đã nhập và đóng hộp thoại tìm kiếm
     onSearch(query);
+    close(context, query); // Đóng hộp thoại tìm kiếm
     return Container(); // Không cần trả về gì ở đây
   }
 
@@ -350,7 +370,21 @@ class BlogSearchDelegate extends SearchDelegate<String> {
 
   @override
   List<Widget>? buildActions(BuildContext context) {
-    // TODO: implement buildActions
-    throw UnimplementedError();
+    return [
+      IconButton(
+        icon: Icon(Icons.clear),
+        onPressed: () {
+          query = '';
+          searchController.clear(); // Xóa nội dung ô nhập
+        },
+      ),
+      IconButton(
+        icon: Icon(Icons.search),
+        onPressed: () {
+          onSearch(query); // Thực hiện tìm kiếm khi nhấn nút
+          close(context, query); // Đóng hộp thoại tìm kiếm
+        },
+      ),
+    ];
   }
 }
