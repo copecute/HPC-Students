@@ -1,20 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:hpc_students/Screen/Blog/blogScreen.dart';
+import 'package:hpc_students/Screen/timNguoiYeu/chat.dart';
 import 'package:hpc_students/Screen/traCuuHocPhiScreen.dart';
 import 'package:hpc_students/Screen/traCuuLichHocScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
+import 'dart:io';
+import 'package:html/parser.dart' as htmlParser;
 import '../include/cookie_provider.dart';
 import '../include/config.dart';
 import 'loginScreen.dart';
+import 'profile.dart'; // Import ProfileScreen
+import 'package:hpc_students/Screen/timNguoiYeu/chat.dart'; // Import ChatScreen
+import 'package:firebase_database/firebase_database.dart'; // Import Firebase Database
 
-class menuScreen extends StatefulWidget {
+class MenuScreen extends StatefulWidget {
   @override
-  _menuScreenState createState() => _menuScreenState();
+  _MenuScreenState createState() => _MenuScreenState();
 }
 
-class _menuScreenState extends State<menuScreen> {
+class _MenuScreenState extends State<MenuScreen> {
   String _hoTen = '';
   bool _isLoading = true;
   bool _dataLoaded = false;
@@ -28,8 +36,8 @@ class _menuScreenState extends State<menuScreen> {
     },
     {
       'id': 2,
-      'icon': Icons.grade,
-      'label': 'Điểm thi Toeic',
+      'icon': Icons.add_chart,
+      'label': 'Kết quả học tập',
       'color': Colors.green
     },
     {
@@ -59,7 +67,7 @@ class _menuScreenState extends State<menuScreen> {
     {
       'id': 7,
       'icon': Icons.sentiment_dissatisfied,
-      'label': 'KT nhập điểm',
+      'label': 'Kỹ năng mềm',
       'color': Colors.teal
     },
     {
@@ -113,7 +121,7 @@ class _menuScreenState extends State<menuScreen> {
 
   Future<void> _fetchData() async {
     String? cookie =
-    Provider.of<CookieProvider>(context, listen: false).getCookie();
+        Provider.of<CookieProvider>(context, listen: false).getCookie();
 
     if (cookie == null || cookie.isEmpty) {
       Navigator.pushReplacement(
@@ -175,97 +183,105 @@ class _menuScreenState extends State<menuScreen> {
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
           : Column(
-        children: [
-          // Card hiển thị thông tin profile (fixed)
-          Card(
-            margin: EdgeInsets.all(10),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            elevation: 4,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 40,
-                    backgroundImage: AssetImage('assets/avatar.png'),
-                  ),
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Họ và Tên: $_hoTen',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+              children: [
+                // Card hiển thị thông tin profile (fixed)
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ProfileScreen()),
+                    );
+                  },
+                  child: Card(
+                    margin: EdgeInsets.all(10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    elevation: 4,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 40,
+                            backgroundImage: AssetImage('assets/avatar.png'),
                           ),
-                        ),
-                        SizedBox(height: 4),
-                        FutureBuilder<SharedPreferences>(
-                          future: SharedPreferences.getInstance(),
-                          builder: (context, snapshot) {
-                            if (snapshot.hasData) {
-                              final prefs = snapshot.data;
-                              return Text(
-                                  'Mã sinh viên: ${prefs?.getString('username') ?? 'Chưa có'}');
-                            }
-                            return Text('Mã sinh viên: Đang tải...');
-                          },
-                        ),
-                      ],
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Họ và Tên: $_hoTen',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                FutureBuilder<SharedPreferences>(
+                                  future: SharedPreferences.getInstance(),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.hasData) {
+                                      final prefs = snapshot.data;
+                                      return Text(
+                                          'Mã sinh viên: ${prefs?.getString('username') ?? 'Chưa có'}');
+                                    }
+                                    return Text('Mã sinh viên: Đang tải...');
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-          // GridView hiển thị các chức năng (scrollable)
-          Expanded(
-            child: GridView.builder(
-              padding: EdgeInsets.all(10),
-              itemCount: buttons.length,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-              ),
-              itemBuilder: (context, index) {
-                return _buildGridButton(
-                  context,
-                  buttons[index]['id'],
-                  buttons[index]['icon'],
-                  buttons[index]['label'],
-                  buttons[index]['color'],
-                );
-              },
-            ),
-          ),
-          // Nút đăng xuất (fixed)
-          Padding(
-            padding: const EdgeInsets.all(10.0),
-            child: ElevatedButton(
-              onPressed: () {
-                _showLogoutConfirmationDialog(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF2d59a4),
-                padding: EdgeInsets.symmetric(vertical: 15),
-                minimumSize: Size(double.infinity, 50),
-              ),
-              child: Text(
-                'Đăng xuất',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white,
                 ),
-              ),
+                // GridView hiển thị các chức năng (scrollable)
+                Expanded(
+                  child: GridView.builder(
+                    padding: EdgeInsets.all(10),
+                    itemCount: buttons.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                    ),
+                    itemBuilder: (context, index) {
+                      return _buildGridButton(
+                        context,
+                        buttons[index]['id'],
+                        buttons[index]['icon'],
+                        buttons[index]['label'],
+                        buttons[index]['color'],
+                      );
+                    },
+                  ),
+                ),
+                // Nút đăng xuất (fixed)
+                Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      _showLogoutConfirmationDialog(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF2d59a4),
+                      padding: EdgeInsets.symmetric(vertical: 15),
+                      minimumSize: Size(double.infinity, 50),
+                    ),
+                    child: Text(
+                      'Đăng xuất',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -302,12 +318,12 @@ class _menuScreenState extends State<menuScreen> {
   }
 
   Widget _buildGridButton(
-      BuildContext context,
-      int id,
-      IconData icon,
-      String label,
-      Color color,
-      ) {
+    BuildContext context,
+    int id,
+    IconData icon,
+    String label,
+    Color color,
+  ) {
     return InkWell(
       onTap: () {
         _handleNavigation(context, id);
@@ -344,6 +360,28 @@ class _menuScreenState extends State<menuScreen> {
           MaterialPageRoute(builder: (context) => TraCuuLichHocScreen()),
         );
         break;
+      case 5:
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        String? username =
+            prefs.getString('username'); // Get username from SharedPreferences
+
+        if (username != null) {
+          // Navigate to ChatScreen and add user to queue
+          final DatabaseReference queueRef =
+              FirebaseDatabase.instance.ref('queue');
+          await queueRef.push().set(username); // Add user to queue
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ChatScreen(username: username,),
+            ),
+          );
+        } else {
+          // Handle case where username is not found
+          _showSnackBar(context, 'Tên người dùng không tồn tại.');
+        }
+        break;
       case 9:
         Navigator.push(
           context,
@@ -366,10 +404,10 @@ class _menuScreenState extends State<menuScreen> {
         _showSnackBar(context, 'Chưa có chức năng này!');
     }
   }
-}
 
-void _showSnackBar(BuildContext context, String message) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(message)),
-  );
+  void _showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
 }

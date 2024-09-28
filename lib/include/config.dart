@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:hpc_students/Screen/traCuuLichHocScreen.dart';
 
 const String baseUrl = 'https://sinhvien.bachkhoahanoi.edu.vn';
+const String blogID = '1068271185371072211';
 
 // Gọi hàm này trong hàm main của ứng dụng trước khi thực hiện bất kỳ yêu cầu nào
 void setupHttpOverrides() {
