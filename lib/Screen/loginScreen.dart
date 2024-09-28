@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import '../include/config.dart'; // File config chứa baseUrl
-import '../main.dart'; // Màn hình Main
-import '../include/cookie_provider.dart'; // Import CookieProvider
-import 'package:provider/provider.dart'; // Import provider package
-import 'package:shared_preferences/shared_preferences.dart'; // Import shared_preferences
+import '../include/config.dart';
+import '../main.dart';
+import '../include/cookie_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-// Enum để quản lý trạng thái đăng nhập
 enum LoginStatus { success, failure, redirect }
 
 class LoginScreen extends StatefulWidget {
@@ -17,13 +16,13 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _isLoading = false; // Biến để theo dõi trạng thái loading
-  bool _obscureText = true; // Biến để ẩn/hiện mật khẩu
+  bool _isLoading = false;
+  bool _obscureText = true;
 
   @override
   void initState() {
     super.initState();
-    _autoLogin(); // Thử đăng nhập tự động khi mở ứng dụng
+    _autoLogin();
   }
 
   Future<void> _autoLogin() async {
@@ -33,18 +32,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (savedUsername != null && savedPassword != null) {
       setState(() {
-        _isLoading = true; // Bắt đầu loading
+        _isLoading = true;
       });
 
-      // Gửi yêu cầu đăng xuất
       bool logoutSuccess = await _logout();
 
-      // Nếu đăng xuất thành công thì tiếp tục đăng nhập
       if (logoutSuccess) {
-        // Gửi yêu cầu đăng nhập
         LoginStatus status = await _attemptLogin(savedUsername, savedPassword);
         setState(() {
-          _isLoading = false; // Kết thúc loading
+          _isLoading = false;
         });
 
         if (status == LoginStatus.success || status == LoginStatus.redirect) {
@@ -55,71 +51,60 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       } else {
         setState(() {
-          _isLoading = false; // Kết thúc loading
+          _isLoading = false;
         });
-        // Nếu đăng xuất không thành công, có thể thông báo cho người dùng
-        // _showSnackBar('Đăng xuất không thành công, không thể tự động đăng nhập.');
       }
     }
   }
 
   Future<bool> _logout() async {
-    // URL API đăng xuất
     String url = '$baseUrl/DangNhap/Logout';
-
-    // Lấy cookie từ CookieProvider
     String cookie = Provider.of<CookieProvider>(context, listen: false).getCookie() ?? '';
 
-    // Gửi yêu cầu GET đến API đăng xuất
     try {
       var response = await http.get(
         Uri.parse(url),
-        headers: {'Cookie': cookie}, // Sử dụng cookie từ Provider
+        headers: {'Cookie': cookie},
       );
 
       if (response.statusCode == 200) {
-        // Đăng xuất thành công
-        Provider.of<CookieProvider>(context, listen: false).setCookie(''); // Xóa cookie hiện tại
+        Provider.of<CookieProvider>(context, listen: false).setCookie('');
         SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.remove('cookie'); // Xóa cookie cũ khỏi SharedPreferences
-        return true; // Đăng xuất thành công
+        await prefs.remove('cookie');
+        return true;
       }
     } catch (e) {
-      // Xử lý lỗi nếu cần
+      // Xử lý lỗi
     }
-    return false; // Đăng xuất không thành công
+    return false;
   }
 
   Future<void> _login() async {
     String username = _usernameController.text;
     String password = _passwordController.text;
 
-    // Kiểm tra tính hợp lệ của input
     if (username.isEmpty || password.isEmpty) {
       _showSnackBar('Vui lòng nhập tên đăng nhập và mật khẩu.');
       return;
     }
 
     setState(() {
-      _isLoading = true; // Bắt đầu loading
+      _isLoading = true;
     });
 
-    // Gửi yêu cầu đăng nhập
     LoginStatus status = await _attemptLogin(username, password);
 
     setState(() {
-      _isLoading = false; // Kết thúc loading
+      _isLoading = false;
     });
 
     switch (status) {
       case LoginStatus.success:
       case LoginStatus.redirect:
-      // Lưu tài khoản, mật khẩu và cookie
         SharedPreferences prefs = await SharedPreferences.getInstance();
         prefs.setString('username', username);
         prefs.setString('password', password);
 
-        // Lưu cookie vào SharedPreferences
         String? cookie = Provider.of<CookieProvider>(context, listen: false).getCookie();
         if (cookie != null) {
           prefs.setString('cookie', cookie);
@@ -154,18 +139,15 @@ class _LoginScreenState extends State<LoginScreen> {
       },
     );
 
-    // Lưu cookie vào CookieProvider
     String? cookie = response.headers['set-cookie'];
     if (cookie != null) {
       Provider.of<CookieProvider>(context, listen: false).setCookie(cookie);
     }
 
-    // Lưu cookie vào SharedPreferences
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setString('cookie', cookie ?? '');
 
     if (response.statusCode == 200) {
-      // Đăng nhập thành công
       if (response.body.contains('message=')) {
         var decodedResponse = Uri.parse(response.body);
         var queryParams = decodedResponse.queryParameters;
@@ -193,51 +175,90 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Đăng nhập'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center, // Căn giữa
-          children: [
-            // Thêm logo
-            Image.asset(
-              'assets/icon.png', // Đường dẫn đến logo
-              height: 100, // Chiều cao logo
-            ),
-            SizedBox(height: 20), // Khoảng cách giữa logo và form
-            TextField(
-              controller: _usernameController,
-              decoration: InputDecoration(labelText: 'Mã sinh viên'),
-            ),
-            TextField(
-              controller: _passwordController,
-              decoration: InputDecoration(
-                labelText: 'Mật khẩu',
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscureText ? Icons.visibility : Icons.visibility_off,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.blue[200]!, Colors.blue[900]!],
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(
+                'assets/icon.png',
+                height: 120,
+              ),
+              SizedBox(height: 20),
+              TextField(
+                controller: _usernameController,
+                decoration: InputDecoration(
+                  labelText: 'Mã sinh viên',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _obscureText = !_obscureText; // Chuyển đổi trạng thái ẩn/hiện
-                    });
-                  },
+                  filled: true,
+                  fillColor: Colors.white,
+                  labelStyle: TextStyle(fontSize: 18),
+                  contentPadding: EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
                 ),
               ),
-              obscureText: _obscureText, // Sử dụng biến để ẩn/hiện mật khẩu
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _login, // Vô hiệu hóa nút khi loading
-              child: _isLoading
-                  ? CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              )
-                  : Text('Đăng nhập'),
-            ),
-          ],
+              SizedBox(height: 20),
+              TextField(
+                controller: _passwordController,
+                decoration: InputDecoration(
+                  labelText: 'Mật khẩu',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  labelStyle: TextStyle(fontSize: 18),
+                  contentPadding: EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureText ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscureText = !_obscureText;
+                      });
+                    },
+                  ),
+                ),
+                obscureText: _obscureText,
+              ),
+              SizedBox(height: 30),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _login,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF2d59a4),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    elevation: 5,
+                  ),
+                  child: _isLoading
+                      ? CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  )
+                      : Text(
+                    'Đăng nhập',
+                    style: TextStyle(
+                      fontSize: 20,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

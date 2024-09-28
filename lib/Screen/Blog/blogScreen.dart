@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart';
 import 'blogDetailScreen.dart';
+import 'package:hpc_students/include/config.dart';
 
 class BlogScreen extends StatefulWidget {
   @override
@@ -32,16 +33,18 @@ class _BlogScreenState extends State<BlogScreen> {
     });
 
     // Xây dựng URL
-    String url = 'https://www.blogger.com/feeds/1068271185371072211/posts/default';
+    String url = 'https://www.blogger.com/feeds/$blogID/posts/default';
 
     if (category != null) {
-      url += '/-/${Uri.encodeComponent(category)}'; // Thay thế 'tên chuyên mục' bằng tên category
+      url += '/-/${Uri.encodeComponent(category)}';
       _selectedCategory = category; // Lưu chuyên mục đã chọn
     }
 
-    url += '?max-results=$_postsPerPage&start-index=${(_currentPage - 1) * _postsPerPage + 1}';
+    url +=
+        '?max-results=$_postsPerPage&start-index=${(_currentPage - 1) * _postsPerPage + 1}';
     if (searchQuery != null && searchQuery.isNotEmpty) {
-      url += '&q=${Uri.encodeComponent(searchQuery)}'; // Thêm từ khóa tìm kiếm nếu có
+      url +=
+          '&q=${Uri.encodeComponent(searchQuery)}'; // Thêm từ khóa tìm kiếm nếu có
     }
 
     try {
@@ -52,13 +55,14 @@ class _BlogScreenState extends State<BlogScreen> {
 
         setState(() {
           _posts = entries.toList();
-          _totalPosts =
-              int.parse(document.findAllElements('openSearch:totalResults').first.text);
+          _totalPosts = int.parse(
+              document.findAllElements('openSearch:totalResults').first.text);
           _filteredPosts = _posts;
           _totalPages = (_totalPosts / _postsPerPage).ceil();
 
           // Lấy danh sách chuyên mục
-          _categories = document.findAllElements('category')
+          _categories = document
+              .findAllElements('category')
               .map((category) => category.getAttribute('term'))
               .where((term) => term != null)
               .map((term) => term!)
@@ -67,7 +71,7 @@ class _BlogScreenState extends State<BlogScreen> {
           _isLoading = false;
         });
       } else {
-        throw Exception('Failed to load blog posts');
+        throw Exception('Không tải được bài viết trên blog');
       }
     } catch (e) {
       setState(() {
@@ -150,7 +154,8 @@ class _BlogScreenState extends State<BlogScreen> {
       }
 
       int start = _currentPage > 2 ? _currentPage - 1 : 2;
-      int end = _currentPage < _totalPages - 1 ? _currentPage + 1 : _totalPages - 1;
+      int end =
+          _currentPage < _totalPages - 1 ? _currentPage + 1 : _totalPages - 1;
 
       for (int i = start; i <= end; i++) {
         if (i >= 2 && i < _totalPages) {
@@ -160,7 +165,8 @@ class _BlogScreenState extends State<BlogScreen> {
               child: Text(
                 '$i',
                 style: TextStyle(
-                  fontWeight: i == _currentPage ? FontWeight.bold : FontWeight.normal,
+                  fontWeight:
+                      i == _currentPage ? FontWeight.bold : FontWeight.normal,
                   color: i == _currentPage ? Colors.blue : Colors.black,
                 ),
               ),
@@ -229,7 +235,8 @@ class _BlogScreenState extends State<BlogScreen> {
                 title: Text(category),
                 onTap: () {
                   setState(() {
-                    _currentPage = 1; // Đặt lại trang về 1 khi chọn chuyên mục mới
+                    _currentPage =
+                        1; // Đặt lại trang về 1 khi chọn chuyên mục mới
                     _fetchBlogPosts(category: category);
                   });
                   Navigator.pop(context); // Đóng Navigation Drawer
@@ -242,75 +249,79 @@ class _BlogScreenState extends State<BlogScreen> {
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
           : ListView(
-        children: [
-          ..._filteredPosts.map((post) {
-            final title = post.findElements('title').first.text;
-            final selfLink = post.findElements('link').firstWhere(
-                  (link) => link.getAttribute('rel') == 'self',
-              orElse: () => XmlElement(XmlName('link')),
-            ).getAttribute('href');
-            final published = post.findElements('published').first.text;
-            final thumbnail = _getThumbnail(post);
+              children: [
+                ..._filteredPosts.map((post) {
+                  final title = post.findElements('title').first.text;
+                  final selfLink = post
+                      .findElements('link')
+                      .firstWhere(
+                        (link) => link.getAttribute('rel') == 'self',
+                        orElse: () => XmlElement(XmlName('link')),
+                      )
+                      .getAttribute('href');
+                  final published = post.findElements('published').first.text;
+                  final thumbnail = _getThumbnail(post);
 
-            return GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BlogDetailScreen(postUrl: selfLink!),
-                  ),
-                );
-              },
-              child: Card(
-                elevation: 4,
-                margin: EdgeInsets.all(8),
-                child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      if (thumbnail != null)
-                        Image.network(
-                          thumbnail,
-                          height: 100,
-                          width: 100,
-                          fit: BoxFit.cover,
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              BlogDetailScreen(postUrl: selfLink!),
                         ),
-                      SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      );
+                    },
+                    child: Card(
+                      elevation: 4,
+                      margin: EdgeInsets.all(8),
+                      child: Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Row(
                           children: [
-                            Text(
-                              title,
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                            if (thumbnail != null)
+                              Image.network(
+                                thumbnail,
+                                height: 100,
+                                width: 100,
+                                fit: BoxFit.cover,
                               ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              published,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey,
+                            SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    title,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    published,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ],
+                    ),
+                  );
+                }).toList(),
+                if (_totalPages > 1)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: _buildPageButtons(),
                   ),
-                ),
-              ),
-            );
-          }).toList(),
-          if (_totalPages > 1)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: _buildPageButtons(),
+              ],
             ),
-        ],
-      ),
     );
   }
 }
@@ -333,7 +344,8 @@ class BlogSearchDelegate extends SearchDelegate<String> {
     ];
 
     final filteredSuggestions = suggestions
-        .where((suggestion) => suggestion.toLowerCase().contains(query.toLowerCase()))
+        .where((suggestion) =>
+            suggestion.toLowerCase().contains(query.toLowerCase()))
         .toList();
 
     return ListView(
@@ -341,7 +353,8 @@ class BlogSearchDelegate extends SearchDelegate<String> {
         return ListTile(
           title: Text(suggestion),
           onTap: () {
-            searchController.text = suggestion; // Đặt từ khóa đã chọn vào controller
+            searchController.text =
+                suggestion; // Đặt từ khóa đã chọn vào controller
             onSearch(suggestion); // Gọi hàm tìm kiếm với từ khóa đã chọn
             close(context, suggestion); // Đóng hộp thoại tìm kiếm
           },

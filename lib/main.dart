@@ -12,8 +12,13 @@ import 'package:hpc_students/Screen/TraCuuDiemRenLuyenScreen.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart'; // Thư viện SharedPreferences
 import 'package:hpc_students/Screen/Blog/blogScreen.dart';
+import 'package:hpc_students/Screen/HomeScreen.dart';
+import 'package:hpc_students/Screen/menuScreen.dart';
+import 'package:firebase_core/firebase_core.dart'; // Import Firebase Core
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized(); // Ensure binding is initialized
+  await Firebase.initializeApp(); // Initialize Firebase
   setupHttpOverrides();
   runApp(
     ChangeNotifierProvider(
@@ -76,85 +81,13 @@ class _MainScreenState extends State<MainScreen> {
     TraCuuLichHocScreen(), // Màn hình lịch học
     TraCuuDiemRenLuyenScreen(), // Màn hình điểm rèn luyện
     TraCuuHocPhiScreen(), // Màn hình học phí
-    ProfileScreen(), // Màn hình profile
+    MenuScreen(), // Màn hình menu
   ];
 
-  Future<void> _logout(BuildContext context) async {
-    // URL API đăng xuất
-    String url = '$baseUrl/DangNhap/Logout';
-
-    // Lấy cookie từ CookieProvider
-    String cookie =
-        Provider.of<CookieProvider>(context, listen: false).cookie ?? '';
-
-    // Gửi yêu cầu GET đến API đăng xuất
-    try {
-      var response = await http.get(
-        Uri.parse(url),
-        headers: {'Cookie': cookie}, // Sử dụng cookie từ Provider
-      );
-      if (response.statusCode == 200) {
-        // Xóa thông tin đăng nhập từ SharedPreferences
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.remove('username'); // Xóa tên đăng nhập
-        await prefs.remove('password'); // Xóa mật khẩu
-
-        // Chuyển về màn hình đăng nhập
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => LoginScreen()),
-        );
-      } else {
-        // Xử lý lỗi khi không thể đăng xuất
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Lỗi khi đăng xuất: ${response.reasonPhrase}')),
-        );
-      }
-    } catch (error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Kiểm tra kết nối Internet!')),
-      );
-    }
-  }
-
   void _onItemTapped(int index) {
-    if (index == 5) {
-      // Đăng xuất là item thứ 6
-      _showLogoutConfirmationDialog(
-          context); // Gọi phương thức hiển thị dialog xác nhận
-    } else {
-      setState(() {
-        _selectedIndex = index; // Cập nhật chỉ số màn hình
-      });
-    }
-  }
-
-  void _showLogoutConfirmationDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Xác nhận đăng xuất'),
-          content: Text('Bạn có chắc chắn muốn đăng xuất không?'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Đóng dialog nếu nhấn "Không"
-              },
-              child: Text('Không'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Đóng dialog
-                _logout(context); // Gọi phương thức đăng xuất
-              },
-              child: Text('Có'),
-            ),
-          ],
-        );
-      },
-    );
+    setState(() {
+      _selectedIndex = index; // Cập nhật chỉ số màn hình
+    });
   }
 
   @override
@@ -183,46 +116,11 @@ class _MainScreenState extends State<MainScreen> {
             icon: Icon(Icons.account_circle), // Biểu tượng hồ sơ
             label: 'Hồ sơ',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.logout), // Biểu tượng đăng xuất
-            label: 'Đăng xuất',
-          ),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.blue,
         unselectedItemColor: Colors.grey, // Màu cho item không được chọn
         onTap: _onItemTapped, // Gọi hàm khi nhấn vào nút
-      ),
-    );
-  }
-}
-
-// Màn hình trang chủ
-class HomeScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Trang chủ'),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('dev by copecute'),
-            SizedBox(height: 20), // Khoảng cách giữa văn bản và nút
-            ElevatedButton(
-              onPressed: () {
-                // Khi nhấn nút, điều hướng đến BlogScreen
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => BlogScreen()),
-                );
-              },
-              child: Text('Blog'), // Nút "Blog"
-            ),
-          ],
-        ),
       ),
     );
   }

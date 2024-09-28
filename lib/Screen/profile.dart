@@ -36,7 +36,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _fetchData() async {
-    String? cookie = Provider.of<CookieProvider>(context, listen: false).getCookie();
+    String? cookie =
+        Provider.of<CookieProvider>(context, listen: false).getCookie();
 
     if (cookie == null || cookie.isEmpty) {
       Navigator.pushReplacement(
@@ -65,10 +66,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
         var document = htmlParser.parse(response.body);
 
         _hoTen = document.getElementById("Ho_ten")?.attributes['value'] ?? '';
-        _dienThoai = document.getElementById("Dienthoai_canhan")?.attributes['value'] ?? '';
-        _ngaySinh = document.getElementById("Ngay_sinh")?.attributes['value'] ?? '';
-        _gioiTinh = document.getElementById("ID_gioi_tinh")?.querySelector('option[selected]')?.text ?? 'Nam';
-        _truongTHPT = document.getElementById("TruongTHPT")?.attributes['value'] ?? '';
+        _dienThoai =
+            document.getElementById("Dienthoai_canhan")?.attributes['value'] ??
+                '';
+        _ngaySinh =
+            document.getElementById("Ngay_sinh")?.attributes['value'] ?? '';
+        _gioiTinh = document
+                .getElementById("ID_gioi_tinh")
+                ?.querySelector('option[selected]')
+                ?.text ??
+            'Nam';
+        _truongTHPT =
+            document.getElementById("TruongTHPT")?.attributes['value'] ?? '';
         _cmnd = document.getElementById("CMND")?.attributes['value'] ?? '';
 
         setState(() {
@@ -97,36 +106,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
           : Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: CircleAvatar(
-                  radius: 50, // Kích thước avatar
-                  backgroundImage: AssetImage('assets/avatar.png'), // Ảnh avatar
+              padding: const EdgeInsets.all(16.0),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: CircleAvatar(
+                        radius: 50, // Kích thước avatar
+                        backgroundImage:
+                            AssetImage('assets/avatar.png'), // Ảnh avatar
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Họ và Tên: $_hoTen',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 8),
+                    Text('Điện thoại: $_dienThoai'),
+                    SizedBox(height: 8),
+                    Text('Ngày sinh: $_ngaySinh'),
+                    SizedBox(height: 8),
+                    Text('Giới tính: $_gioiTinh'),
+                    SizedBox(height: 8),
+                    Text('Trường THPT: $_truongTHPT'),
+                    SizedBox(height: 8),
+                    Text('CMND: $_cmnd'),
+                  ],
                 ),
               ),
-              SizedBox(height: 16),
-              Text(
-                'Họ và Tên: $_hoTen',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 8),
-              Text('Điện thoại: $_dienThoai'),
-              SizedBox(height: 8),
-              Text('Ngày sinh: $_ngaySinh'),
-              SizedBox(height: 8),
-              Text('Giới tính: $_gioiTinh'),
-              SizedBox(height: 8),
-              Text('Trường THPT: $_truongTHPT'),
-              SizedBox(height: 8),
-              Text('CMND: $_cmnd'),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 }
