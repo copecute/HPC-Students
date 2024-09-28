@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'config.dart'; // File config chứa baseUrl
-import 'main.dart'; // Màn hình Main
-import 'cookie_provider.dart'; // Import CookieProvider
+import '../include/config.dart'; // File config chứa baseUrl
+import '../main.dart'; // Màn hình Main
+import '../include/cookie_provider.dart'; // Import CookieProvider
 import 'package:provider/provider.dart'; // Import provider package
 import 'package:shared_preferences/shared_preferences.dart'; // Import shared_preferences
 

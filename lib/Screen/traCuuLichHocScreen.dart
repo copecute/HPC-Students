@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:hpc_students/config.dart';
+import 'package:hpc_students/include/config.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
-import 'cookie_provider.dart'; // Import CookieProvider
+import 'package:hpc_students/include/cookie_provider.dart'; // Import CookieProvider
 import 'package:html/parser.dart' as html;
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
-import 'loginScreen.dart';
+import 'package:hpc_students/Screen/loginScreen.dart';
 
 class TraCuuLichHocScreen extends StatefulWidget {
   @override

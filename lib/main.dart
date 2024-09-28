@@ -1,16 +1,17 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:hpc_students/traCuuHocPhiScreen.dart';
-import 'package:hpc_students/traCuuLichHocScreen.dart';
-import 'package:hpc_students/TraCuuDiemRenLuyenScreen.dart';
-import 'profile.dart';
-import 'config.dart'; // File config chứa baseUrl
+import 'package:hpc_students/Screen/traCuuHocPhiScreen.dart';
+import 'package:hpc_students/Screen/traCuuLichHocScreen.dart';
+import 'package:hpc_students/Screen/TraCuuDiemRenLuyenScreen.dart';
+import 'Screen/profile.dart';
+import 'include/config.dart'; // File config chứa baseUrl
 import 'package:provider/provider.dart';
-import 'cookie_provider.dart'; // Import CookieProvider
-import 'loginscreen.dart'; // Đường dẫn đến màn hình đăng nhập
-import 'package:hpc_students/TraCuuDiemRenLuyenScreen.dart';
+import 'include/cookie_provider.dart'; // Import CookieProvider
+import 'package:hpc_students/Screen/loginScreen.dart'; // Đường dẫn đến màn hình đăng nhập
+import 'package:hpc_students/Screen/TraCuuDiemRenLuyenScreen.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart'; // Thư viện SharedPreferences
+import 'package:hpc_students/Screen/Blog/blogScreen.dart';
 
 void main() {
   setupHttpOverrides();
@@ -201,14 +202,27 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Sử dụng Scaffold để tạo cấu trúc cho màn hình
       appBar: AppBar(
-        // Đặt AppBar vào trong thuộc tính appBar của Scaffold
         title: Text('Trang chủ'),
       ),
       body: Center(
-        // Đặt nội dung chính vào trong body của Scaffold
-        child: Text('dev by copecute'),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('dev by copecute'),
+            SizedBox(height: 20), // Khoảng cách giữa văn bản và nút
+            ElevatedButton(
+              onPressed: () {
+                // Khi nhấn nút, điều hướng đến BlogScreen
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => BlogScreen()),
+                );
+              },
+              child: Text('Blog'), // Nút "Blog"
+            ),
+          ],
+        ),
       ),
     );
   }

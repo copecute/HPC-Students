@@ -5,8 +5,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:html/parser.dart' as htmlParser;
 import 'package:provider/provider.dart';
-import 'cookie_provider.dart';
-import 'config.dart'; // File config chứa baseUrl
+import '../include/cookie_provider.dart';
+import '../include/config.dart'; // File config chứa baseUrl
 import 'loginScreen.dart'; // Thêm đường dẫn đến file đăng nhập
 
 class TraCuuHocPhiScreen extends StatefulWidget {

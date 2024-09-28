@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:hpc_students/traCuuLichHocScreen.dart';
+import 'package:hpc_students/Screen/traCuuLichHocScreen.dart';
 
 const String baseUrl = 'https://sinhvien.bachkhoahanoi.edu.vn';
 

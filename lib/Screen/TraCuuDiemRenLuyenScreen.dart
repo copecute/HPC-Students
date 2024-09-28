@@ -4,8 +4,8 @@ import 'package:http/io_client.dart';
 import 'dart:io';
 import 'package:html/parser.dart' as htmlParser;
 import 'package:provider/provider.dart';
-import 'cookie_provider.dart';
-import 'config.dart';
+import '../include/cookie_provider.dart';
+import '../include/config.dart';
 import 'loginScreen.dart';
 
 class TraCuuDiemRenLuyenScreen extends StatefulWidget {
