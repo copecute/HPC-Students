@@ -3,6 +3,8 @@ import 'package:hpc_students/Screen/Blog/blogScreen.dart';
 import 'package:hpc_students/Screen/timNguoiYeu/chat.dart';
 import 'package:hpc_students/Screen/traCuuHocPhiScreen.dart';
 import 'package:hpc_students/Screen/traCuuLichHocScreen.dart';
+import 'package:hpc_students/Screen/rankScreen.dart';
+import 'package:hpc_students/Screen/traDiemScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
@@ -16,6 +18,7 @@ import 'loginScreen.dart';
 import 'profile.dart'; // Import ProfileScreen
 import 'package:hpc_students/Screen/timNguoiYeu/chat.dart'; // Import ChatScreen
 import 'package:firebase_database/firebase_database.dart'; // Import Firebase Database
+import '../include/theme_provider.dart'; // Import ThemeProvider
 
 class MenuScreen extends StatefulWidget {
   @override
@@ -24,8 +27,14 @@ class MenuScreen extends StatefulWidget {
 
 class _MenuScreenState extends State<MenuScreen> {
   String _hoTen = '';
+  String _dienThoai = '';
+  String _ngaySinh = '';
+  String _gioiTinh = 'Nam';
+  String _truongTHPT = '';
+  String _cmnd = '';
   bool _isLoading = true;
-  bool _dataLoaded = false;
+  String? _avatarUrl; // Add this line to declare the avatar URL variable
+  bool _isFetched = false;
 
   final List<Map<String, dynamic>> buttons = [
     {
@@ -85,7 +94,7 @@ class _MenuScreenState extends State<MenuScreen> {
     {
       'id': 10,
       'icon': Icons.rate_review,
-      'label': 'Review học phần',
+      'label': 'HPC Confession',
       'color': Colors.purple
     },
     {
@@ -97,7 +106,7 @@ class _MenuScreenState extends State<MenuScreen> {
     {
       'id': 12,
       'icon': Icons.newspaper,
-      'label': 'Tin tức',
+      'label': 'Bài viết',
       'color': Colors.blueGrey
     },
   ];
@@ -105,21 +114,12 @@ class _MenuScreenState extends State<MenuScreen> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _loadData().then((_) {
+      _fetchData(); // Call the fetchData method after loadData completes
+    });
   }
 
   Future<void> _loadData() async {
-    if (!_dataLoaded) {
-      await _fetchData();
-      _dataLoaded = true;
-    } else {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _fetchData() async {
     String? cookie =
         Provider.of<CookieProvider>(context, listen: false).getCookie();
 
@@ -151,8 +151,25 @@ class _MenuScreenState extends State<MenuScreen> {
 
         setState(() {
           _hoTen = document.getElementById("Ho_ten")?.attributes['value'] ?? '';
+          _dienThoai = document
+                  .getElementById("Dienthoai_canhan")
+                  ?.attributes['value'] ??
+              '';
+          _ngaySinh =
+              document.getElementById("Ngay_sinh")?.attributes['value'] ?? '';
+          _gioiTinh = document
+                  .getElementById("ID_gioi_tinh")
+                  ?.querySelector('option[selected]')
+                  ?.text ??
+              'Nam';
+          _truongTHPT =
+              document.getElementById("TruongTHPT")?.attributes['value'] ?? '';
+          _cmnd = document.getElementById("CMND")?.attributes['value'] ?? '';
           _isLoading = false;
         });
+
+        // Gọi phương thức fetchData để lấy avatar
+        _fetchData();
       } else {
         setState(() {
           _isLoading = false;
@@ -167,18 +184,123 @@ class _MenuScreenState extends State<MenuScreen> {
     }
   }
 
+  Future<void> _fetchData() async {
+    String? cookie =
+        Provider.of<CookieProvider>(context, listen: false).getCookie();
+
+    if (cookie == null || cookie.isEmpty) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+            builder: (context) =>
+                LoginScreen()), // Redirect to login if no cookie
+      );
+      return;
+    }
+
+    final url = 'https://zalo.me/$_dienThoai';
+    final HttpClient httpClient = HttpClient()
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
+
+    final ioClient = IOClient(httpClient);
+
+    try {
+      final response = await ioClient.get(
+        Uri.parse(url),
+      );
+
+      if (response.statusCode == 200) {
+        print("đã get $url");
+        String responseBody = response.body;
+
+        // Extract the avatar URL from the response body
+        RegExp regExp = RegExp(r'"avatar":"(.*?)"');
+        Match? match = regExp.firstMatch(responseBody);
+        String avatarUrl = match != null ? match.group(1) ?? '' : '';
+
+        // Nếu không có avatarUrl hoặc trống thì sử dụng ảnh cục bộ
+        setState(() {
+          _avatarUrl = avatarUrl.isNotEmpty
+              ? avatarUrl
+              : null; // Dùng null để kiểm tra trong UI
+          _isLoading = false; // Set loading to false
+          _isFetched = true; // Mark data as fetched
+        });
+        print("đã get $avatarUrl");
+        // Lưu thông tin vào SharedPreferences sau khi đã lấy xong avatar
+        _saveUserData();
+      } else {
+        setState(() {
+          _avatarUrl = null;
+          _isLoading = false; // Set loading to false
+          _isFetched = true; // Mark data as fetched
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _avatarUrl = null;
+        _isLoading = false; // Set loading to false
+        _isFetched = true; // Mark data as fetched
+      });
+    } finally {
+      ioClient.close();
+    }
+  }
+
+  Future<void> _saveUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('hoTen', _hoTen);
+    await prefs.setString('dienThoai', _dienThoai);
+    await prefs.setString('ngaySinh', _ngaySinh);
+    await prefs.setString('gioiTinh', _gioiTinh);
+    await prefs.setString('truongTHPT', _truongTHPT);
+    await prefs.setString('cmnd', _cmnd);
+    await prefs.setString('avatarUrl', _avatarUrl ?? ''); // Lưu avatar URL
+    print("avatar: ${prefs.getString('avatarUrl')}");
+  }
+
   @override
   Widget build(BuildContext context) {
+    final themeProvider =
+        Provider.of<ThemeProvider>(context); // Get the theme provider
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Menu',
+          'Hồ sơ',
           style: TextStyle(
             fontSize: 20,
             color: Colors.white,
           ),
         ),
         backgroundColor: Color(0xFF2d59a4),
+        actions: [
+          PopupMenuButton<ThemeMode>(
+            icon: Icon(
+              themeProvider.themeMode == ThemeMode.dark
+                  ? Icons.wb_sunny // Sun icon for light theme
+                  : Icons.nights_stay, // Moon icon for dark theme
+            ),
+            onSelected: (ThemeMode newValue) {
+              themeProvider.toggleTheme(newValue);
+            },
+            itemBuilder: (BuildContext context) => [
+              PopupMenuItem(
+                value: ThemeMode.light,
+                child: Text('Sáng'),
+              ),
+              PopupMenuItem(
+                value: ThemeMode.dark,
+                child: Text('Tối'),
+              ),
+              PopupMenuItem(
+                value: ThemeMode.system,
+                child: Text('Hệ thống'),
+              ),
+            ],
+          ),
+        ],
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
@@ -189,7 +311,9 @@ class _MenuScreenState extends State<MenuScreen> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => ProfileScreen()),
+                      MaterialPageRoute(
+                        builder: (context) => ProfileScreen(),
+                      ),
                     );
                   },
                   child: Card(
@@ -204,7 +328,10 @@ class _MenuScreenState extends State<MenuScreen> {
                         children: [
                           CircleAvatar(
                             radius: 40,
-                            backgroundImage: AssetImage('assets/avatar.png'),
+                            backgroundImage: _avatarUrl != null
+                                ? NetworkImage(_avatarUrl!)
+                                : AssetImage(
+                                    'assets/avatar.png'), // Use fetched avatar or local image
                           ),
                           SizedBox(width: 16),
                           Expanded(
@@ -212,23 +339,15 @@ class _MenuScreenState extends State<MenuScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Họ và Tên: $_hoTen',
+                                  '$_hoTen',
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 SizedBox(height: 4),
-                                FutureBuilder<SharedPreferences>(
-                                  future: SharedPreferences.getInstance(),
-                                  builder: (context, snapshot) {
-                                    if (snapshot.hasData) {
-                                      final prefs = snapshot.data;
-                                      return Text(
-                                          'Mã sinh viên: ${prefs?.getString('username') ?? 'Chưa có'}');
-                                    }
-                                    return Text('Mã sinh viên: Đang tải...');
-                                  },
+                                Text(
+                                  'Xem chi tiết hồ sơ',
                                 ),
                               ],
                             ),
@@ -305,6 +424,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 SharedPreferences prefs = await SharedPreferences.getInstance();
                 await prefs.remove('username');
                 await prefs.remove('password');
+                await prefs.clear(); // Clear all cached data on logout
                 Navigator.of(context, rootNavigator: true).pushReplacement(
                   MaterialPageRoute(builder: (context) => LoginScreen()),
                 );
@@ -332,7 +452,6 @@ class _MenuScreenState extends State<MenuScreen> {
       splashColor: color.withOpacity(0.3),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: color, width: 2),
         ),
@@ -354,6 +473,12 @@ class _MenuScreenState extends State<MenuScreen> {
 
   Future<void> _handleNavigation(BuildContext context, int id) async {
     switch (id) {
+      case 2:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => TraDiemScreen()),
+        );
+        break;
       case 4:
         Navigator.push(
           context,
@@ -374,13 +499,21 @@ class _MenuScreenState extends State<MenuScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ChatScreen(username: username,),
+              builder: (context) => ChatScreen(
+                username: username,
+              ),
             ),
           );
         } else {
           // Handle case where username is not found
           _showSnackBar(context, 'Tên người dùng không tồn tại.');
         }
+        break;
+      case 8:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => RankScreen()),
+        );
         break;
       case 9:
         Navigator.push(
@@ -391,7 +524,7 @@ class _MenuScreenState extends State<MenuScreen> {
       case 11:
         final Uri url = Uri.parse('https://zalo.me/g/uttoza177');
         if (!await launchUrl(url)) {
-          throw 'Could not launch $url';
+          throw 'Không thể mở CLUB Thịt Chó Bách Khoa';
         }
         break;
       case 12:

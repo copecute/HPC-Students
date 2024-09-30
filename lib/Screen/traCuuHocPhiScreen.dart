@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../include/cookie_provider.dart';
 import '../include/config.dart'; // File config chứa baseUrl
 import 'loginScreen.dart'; // Thêm đường dẫn đến file đăng nhập
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TraCuuHocPhiScreen extends StatefulWidget {
   @override
@@ -17,29 +18,44 @@ class TraCuuHocPhiScreen extends StatefulWidget {
 class _TraCuuHocPhiScreenState extends State<TraCuuHocPhiScreen> {
   List<Map<String, String>> _hocPhiData = [];
   bool _isLoading = true;
-  bool _isDataFetched = false; // Biến để kiểm tra dữ liệu đã tải chưa
+  bool _isDataFetched = false; // Flag to check if data has been fetched
 
   @override
   void initState() {
     super.initState();
-    // Kiểm tra nếu thông tin đã được tải trước đó
-    if (!_isDataFetched) {
-      _fetchData(); // Nếu chưa có thông tin, tải dữ liệu
-    } else {
+    _loadData(); // Load data on initialization
+  }
+
+  Future<void> _loadData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? cachedData =
+        prefs.getString('cachedHocPhiData'); // Load cached data
+
+    if (cachedData != null) {
+      // If cached data exists, parse it and update the UI
+      List<dynamic> jsonData = jsonDecode(cachedData); // Decode JSON
+      _hocPhiData = List<Map<String, String>>.from(jsonData.map((item) =>
+          Map<String, String>.from(item))); // Cast to List<Map<String, String>>
       setState(() {
-        _isLoading = false; // Nếu đã có thông tin, không cần tải lại
+        _isLoading = false; // Set loading to false
+        _isDataFetched = true; // Mark data as fetched
       });
+    } else {
+      // If no cached data, fetch from the server
+      await _fetchData();
     }
   }
 
   Future<void> _fetchData() async {
     String? cookie =
-    Provider.of<CookieProvider>(context, listen: false).getCookie();
+        Provider.of<CookieProvider>(context, listen: false).getCookie();
 
     if (cookie == null || cookie.isEmpty) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => LoginScreen()),
+        MaterialPageRoute(
+            builder: (context) =>
+                LoginScreen()), // Redirect to login if no cookie
       );
       return;
     }
@@ -48,13 +64,14 @@ class _TraCuuHocPhiScreenState extends State<TraCuuHocPhiScreen> {
     final HttpClient httpClient = HttpClient()
       ..badCertificateCallback =
           (X509Certificate cert, String host, int port) => true;
+
     final ioClient = IOClient(httpClient);
 
     try {
       final response = await ioClient.get(
         Uri.parse(url),
         headers: {
-          'Cookie': cookie,
+          'Cookie': cookie, // Send cookie for authentication
         },
       );
 
@@ -68,17 +85,31 @@ class _TraCuuHocPhiScreenState extends State<TraCuuHocPhiScreen> {
         } else {
           _hocPhiData.add({'error': 'Không tìm thấy dữ liệu!'});
         }
+
+        setState(() {
+          _isLoading = false; // Set loading to false
+          _isDataFetched = true; // Mark data as fetched
+        });
+
+        // Cache the data
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+            'cachedHocPhiData', jsonEncode(_hocPhiData)); // Save to cache
       } else {
-        _hocPhiData.add({'error': 'Lỗi tải dữ liệu'});
+        setState(() {
+          _hocPhiData.add({'error': 'Lỗi tải dữ liệu'});
+          _isLoading = false; // Set loading to false
+          _isDataFetched = true; // Mark data as fetched
+        });
       }
     } catch (e) {
-      _hocPhiData.add({'error': 'Kiểm tra kết nối Internet!'});
+      setState(() {
+        _hocPhiData.add({'error': 'Kiểm tra kết nối Internet!'});
+        _isLoading = false; // Set loading to false
+        _isDataFetched = true; // Mark data as fetched
+      });
     } finally {
       ioClient.close();
-      setState(() {
-        _isLoading = false; // Tắt trạng thái loading
-        _isDataFetched = true; // Đánh dấu dữ liệu đã được tải
-      });
     }
   }
 
@@ -87,19 +118,19 @@ class _TraCuuHocPhiScreenState extends State<TraCuuHocPhiScreen> {
 
     // Lấy tổng số tiền phải nộp
     var totalAmountLabel = newsDiv
-        .querySelector("div.form-group:nth-child(1) label:nth-child(2)")
-        ?.text
-        .trim() ??
+            .querySelector("div.form-group:nth-child(1) label:nth-child(2)")
+            ?.text
+            .trim() ??
         '';
     var totalPaidLabel = newsDiv
-        .querySelector("div.form-group:nth-child(2) label:nth-child(2)")
-        ?.text
-        .trim() ??
+            .querySelector("div.form-group:nth-child(2) label:nth-child(2)")
+            ?.text
+            .trim() ??
         '';
     var balanceLabel = newsDiv
-        .querySelector("div.form-group:nth-child(3) label:nth-child(2)")
-        ?.text
-        .trim() ??
+            .querySelector("div.form-group:nth-child(3) label:nth-child(2)")
+            ?.text
+            .trim() ??
         '';
 
     data.add({
@@ -163,116 +194,132 @@ class _TraCuuHocPhiScreenState extends State<TraCuuHocPhiScreen> {
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-        child: Column(
-          children: [
-            // Hiển thị thông tin tổng số tiền dưới dạng Card
-            Card(
-              margin: EdgeInsets.all(8.0),
-              elevation: 4,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildRichText(
-                        'Tổng số tiền phải nộp:',
-                        tongSoTienPhaiNop.toStringAsFixed(0) + ' ₫',
-                        textColor: Colors.black),
-                    SizedBox(height: 8),
-                    _buildRichText(
-                        'Tổng số tiền đã nộp:',
-                        tongSoTienDaNop.toStringAsFixed(0) + ' ₫',
-                        textColor: Colors.black),
-                    SizedBox(height: 8),
-                    _buildRichText(
-                        'Số tiền thừa/thiếu:',
-                        tongThuaThieu.toStringAsFixed(0) + ' ₫',
-                        textColor: Colors.black),
-                  ],
-                ),
+              child: Column(
+                children: [
+                  // Hiển thị thông tin tổng số tiền dưới dạng Card
+                  Card(
+                    margin: EdgeInsets.all(8.0),
+                    elevation: 4,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildRichText('Tổng số tiền phải nộp:',
+                              tongSoTienPhaiNop.toStringAsFixed(0) + ' ₫',
+                              textColor: Colors.black),
+                          SizedBox(height: 8),
+                          _buildRichText('Tổng số tiền đã nộp:',
+                              tongSoTienDaNop.toStringAsFixed(0) + ' ₫',
+                              textColor: Colors.black),
+                          SizedBox(height: 8),
+                          _buildRichText('Số tiền thừa/thiếu:',
+                              tongThuaThieu.toStringAsFixed(0) + ' ₫',
+                              textColor: Colors.black),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 20),
+
+                  // Hiển thị dữ liệu bảng dưới dạng Card
+                  for (var item in _hocPhiData)
+                    if (item.containsKey('error'))
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(item['error']!,
+                            style: TextStyle(color: Colors.red)),
+                      )
+                    else if (item.containsKey('hocKy'))
+                      Card(
+                        margin: EdgeInsets.all(8.0),
+                        elevation: 6,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15.0),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.all(16.0),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.lightBlueAccent,
+                                Colors.blueAccent
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(15.0),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 8.0,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Năm học: ${item['namHoc'] ?? 'N/A'}',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Học kỳ: ${item['hocKy'] ?? 'N/A'}',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 12.0),
+                              _buildRichText(
+                                  'Mức học phí:', item['mucHocPhi'] ?? '0',
+                                  textColor: Colors.white),
+                              _buildRichText(
+                                  'Miễn giảm:', item['mienGiam'] ?? '0',
+                                  textColor: Colors.white),
+                              _buildRichText('Số tiền phải nộp:',
+                                  item['soTienPhaiNop'] ?? '0',
+                                  textColor: Colors.white),
+                              _buildRichText(
+                                  'Số tiền đã nộp:', item['soTienDaNop'] ?? '0',
+                                  textColor: Colors.white),
+                              _buildRichText(
+                                  'Thừa/Thiếu:', item['thuaThieu'] ?? '0',
+                                  textColor: Colors.red),
+                            ],
+                          ),
+                        ),
+                      ),
+                ],
               ),
             ),
-            SizedBox(height: 20),
-
-            // Hiển thị dữ liệu bảng dưới dạng Card
-            for (var item in _hocPhiData)
-              if (item.containsKey('error'))
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(item['error']!,
-                      style: TextStyle(color: Colors.red)),
-                )
-              else if (item.containsKey('hocKy'))
-                Card(
-                  margin: EdgeInsets.all(8.0),
-                  elevation: 6,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15.0),
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.all(16.0),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.lightBlueAccent, Colors.blueAccent],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(15.0),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 8.0,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Năm học: ${item['namHoc'] ?? 'N/A'}',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            Text(
-                              'Học kỳ: ${item['hocKy'] ?? 'N/A'}',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 12.0),
-                        _buildRichText('Mức học phí:', item['mucHocPhi'] ?? '0', textColor: Colors.white),
-                        _buildRichText('Miễn giảm:', item['mienGiam'] ?? '0', textColor: Colors.white),
-                        _buildRichText('Số tiền phải nộp:', item['soTienPhaiNop'] ?? '0', textColor: Colors.white),
-                        _buildRichText('Số tiền đã nộp:', item['soTienDaNop'] ?? '0', textColor: Colors.white),
-                        _buildRichText('Thừa/Thiếu:', item['thuaThieu'] ?? '0', textColor: Colors.white),
-                      ],
-                    ),
-                  ),
-                ),
-          ],
-        ),
-      ),
     );
   }
 
-  RichText _buildRichText(String title, String value, {Color textColor = Colors.black}) {
+  RichText _buildRichText(String title, String value,
+      {Color textColor = Colors.black}) {
     return RichText(
       text: TextSpan(
         children: [
-          TextSpan(text: title, style: TextStyle(fontSize: 16, color: textColor)),
-          TextSpan(text: ' $value', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
+          TextSpan(
+              text: title, style: TextStyle(fontSize: 16, color: textColor)),
+          TextSpan(
+              text: ' $value',
+              style: TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
         ],
       ),
     );
