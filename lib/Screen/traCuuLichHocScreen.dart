@@ -3,10 +3,11 @@ import 'package:intl/intl.dart';
 import 'package:hpc_students/include/config.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
-import 'package:hpc_students/include/cookie_provider.dart'; // Import CookieProvider
+import 'package:hpc_students/include/cookie_provider.dart';
 import 'package:html/parser.dart' as html;
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:hpc_students/Screen/loginScreen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TraCuuLichHocScreen extends StatefulWidget {
   @override
@@ -22,15 +23,26 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
   Map<String, String> postData = {};
   bool isLoadingWeeks = false;
   bool isLoadingSchedule = false;
-  DateTime? selectedDate; // Biến lưu trữ ngày được chọn
+  DateTime? selectedDate;
 
   @override
   void initState() {
     super.initState();
-    // Tự động load dữ liệu cho ngày hiện tại khi mở màn hình
     selectedDate = DateTime.now();
-    fetchWeeks(getCurrentAcademicYear()); // Lấy danh sách tuần với năm hiện tại
-    calculateWeekFromDate(selectedDate!); // Tính tuần cho ngày hiện tại
+    fetchWeeks(getCurrentAcademicYear());
+    calculateWeekFromDate(selectedDate!);
+    _loadCachedSchedule();
+  }
+
+  Future<void> _loadCachedSchedule() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? cachedHtmlResponse = prefs.getString('cachedSchedule');
+    if (cachedHtmlResponse != null) {
+      setState(() {
+        htmlResponse = cachedHtmlResponse;
+        isLoadingSchedule = false;
+      });
+    }
   }
 
   Future<void> fetchWeeks(String year) async {
@@ -41,7 +53,9 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
     final response = await http.get(
       Uri.parse('$baseUrl/TraCuuLichHoc/LoadTuanThu?Nam_hoc=$year'),
       headers: {
-        'Cookie': Provider.of<CookieProvider>(context, listen: false).getCookie() ?? '',
+        'Cookie':
+            Provider.of<CookieProvider>(context, listen: false).getCookie() ??
+                '',
       },
     );
 
@@ -61,7 +75,6 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
         isLoadingWeeks = false;
       });
 
-      // Tự động fetch schedule khi có dữ liệu tuần và năm học
       if (weeks.isNotEmpty) {
         calculateWeekFromDate(selectedDate!);
       }
@@ -73,15 +86,17 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
     }
   }
 
-  // Hàm tính tuần dựa trên ngày đã chọn
   void calculateWeekFromDate(DateTime date) {
     for (var week in weeks) {
       var weekText = week['text']!;
       var dates = weekText.split('[')[1].split(']')[0].split('--');
-      var startDate = DateFormat('dd/MM/yyyy').parse(dates[0].split('Từ ')[1].trim());
-      var endDate = DateFormat('dd/MM/yyyy').parse(dates[1].split('Đến ')[1].trim());
+      var startDate =
+          DateFormat('dd/MM/yyyy').parse(dates[0].split('Từ ')[1].trim());
+      var endDate =
+          DateFormat('dd/MM/yyyy').parse(dates[1].split('Đến ')[1].trim());
 
-      if (date.isAfter(startDate.subtract(Duration(days: 1))) && date.isBefore(endDate.add(Duration(days: 1)))) {
+      if (date.isAfter(startDate.subtract(Duration(days: 1))) &&
+          date.isBefore(endDate.add(Duration(days: 1)))) {
         setState(() {
           selectedWeek = week['value'];
         });
@@ -89,7 +104,6 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
       }
     }
 
-    // Tự động fetch schedule khi có ngày và tuần
     if (selectedWeek != null) {
       fetchSchedule();
     }
@@ -100,7 +114,8 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
       isLoadingSchedule = true;
     });
 
-    String? cookie = Provider.of<CookieProvider>(context, listen: false).getCookie();
+    String? cookie =
+        Provider.of<CookieProvider>(context, listen: false).getCookie();
     if (cookie == null || cookie.isEmpty) {
       Navigator.pushReplacement(
         context,
@@ -131,6 +146,10 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
         htmlResponse = response.body;
         isLoadingSchedule = false;
       });
+
+      // Cache dữ liệu lịch học sau khi tải thành công
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('cachedSchedule', htmlResponse!); // Save to cache
     } else {
       setState(() {
         isLoadingSchedule = false;
@@ -141,7 +160,15 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
 
   String getCurrentAcademicYear() {
     int year = selectedDate!.year;
-    return year.toString() + '-' + (year + 1).toString(); // Ví dụ: 2024-2025
+    return year.toString() + '-' + (year + 1).toString();
+  }
+
+  Future<void> refreshData() async {
+    // Tải lại danh sách tuần và lịch
+    await fetchWeeks(getCurrentAcademicYear());
+    if (selectedWeek != null) {
+      await fetchSchedule();
+    }
   }
 
   @override
@@ -150,55 +177,57 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
       appBar: AppBar(
         title: Text('Tra cứu lịch học'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Input date picker
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Chọn ngày'),
-              readOnly: true,
-              onTap: () async {
-                DateTime? pickedDate = await showDatePicker(
-                  context: context,
-                  initialDate: selectedDate ?? DateTime.now(),
-                  // Thiết lập firstDate là 8 năm trước
-                  firstDate: DateTime(DateTime.now().year - 8, 8, 5),
-                  // Thiết lập lastDate là 1 năm sau
-                  lastDate: DateTime(DateTime.now().year + 1, 8, 3),
-                );
-                if (pickedDate != null) {
-                  setState(() {
-                    selectedDate = pickedDate;
-                  });
-                  calculateWeekFromDate(pickedDate);
-                }
-              },
-              controller: TextEditingController(
-                text: selectedDate != null ? DateFormat('dd/MM/yyyy').format(selectedDate!) : '',
-              ),
-            ),
-            SizedBox(height: 20),
-            // Hiển thị tuần tương ứng với ngày chọn
-            Text(
-              selectedWeek != null
-                  ? weeks.firstWhere((week) => week['value'] == selectedWeek)['text']!
-                  : '',
-            ),
-            SizedBox(height: 20),
-            if (isLoadingSchedule)
-              CircularProgressIndicator()
-            else if (htmlResponse != null)
-              Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.vertical,
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: HtmlWidget(htmlResponse!),
-                  ),
+      body: RefreshIndicator(
+        onRefresh: refreshData, // Gọi hàm refreshData khi kéo xuống
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              TextFormField(
+                decoration: InputDecoration(labelText: 'Chọn ngày'),
+                readOnly: true,
+                onTap: () async {
+                  DateTime? pickedDate = await showDatePicker(
+                    context: context,
+                    initialDate: selectedDate ?? DateTime.now(),
+                    firstDate: DateTime(DateTime.now().year - 8, 8, 5),
+                    lastDate: DateTime(DateTime.now().year + 1, 8, 3),
+                  );
+                  if (pickedDate != null) {
+                    setState(() {
+                      selectedDate = pickedDate;
+                    });
+                    calculateWeekFromDate(pickedDate);
+                  }
+                },
+                controller: TextEditingController(
+                  text: selectedDate != null
+                      ? DateFormat('dd/MM/yyyy').format(selectedDate!)
+                      : '',
                 ),
               ),
-          ],
+              SizedBox(height: 20),
+              Text(
+                selectedWeek != null
+                    ? weeks.firstWhere(
+                        (week) => week['value'] == selectedWeek)['text']!
+                    : '',
+              ),
+              SizedBox(height: 20),
+              if (isLoadingSchedule)
+                CircularProgressIndicator()
+              else if (htmlResponse != null)
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.vertical,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: HtmlWidget(htmlResponse!),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

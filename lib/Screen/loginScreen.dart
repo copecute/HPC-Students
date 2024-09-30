@@ -5,6 +5,7 @@ import '../main.dart';
 import '../include/cookie_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../include/theme_provider.dart'; // Import ThemeProvider
 
 enum LoginStatus { success, failure, redirect }
 
@@ -34,49 +35,20 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() {
         _isLoading = true;
       });
-
-      bool logoutSuccess = await _logout();
-
-      if (logoutSuccess) {
-        LoginStatus status = await _attemptLogin(savedUsername, savedPassword);
-        setState(() {
-          _isLoading = false;
-        });
-
-        if (status == LoginStatus.success || status == LoginStatus.redirect) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => MainScreen()),
-          );
-        }
-      } else {
+      LoginStatus status = await _attemptLogin(savedUsername, savedPassword);
+      if (mounted) {
         setState(() {
           _isLoading = false;
         });
       }
-    }
-  }
 
-  Future<bool> _logout() async {
-    String url = '$baseUrl/DangNhap/Logout';
-    String cookie = Provider.of<CookieProvider>(context, listen: false).getCookie() ?? '';
-
-    try {
-      var response = await http.get(
-        Uri.parse(url),
-        headers: {'Cookie': cookie},
-      );
-
-      if (response.statusCode == 200) {
-        Provider.of<CookieProvider>(context, listen: false).setCookie('');
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.remove('cookie');
-        return true;
+      if (status == LoginStatus.success || status == LoginStatus.redirect) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => MainScreen()),
+        );
       }
-    } catch (e) {
-      // Xử lý lỗi
     }
-    return false;
   }
 
   Future<void> _login() async {
@@ -94,9 +66,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
     LoginStatus status = await _attemptLogin(username, password);
 
-    setState(() {
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
 
     switch (status) {
       case LoginStatus.success:
@@ -105,7 +79,8 @@ class _LoginScreenState extends State<LoginScreen> {
         prefs.setString('username', username);
         prefs.setString('password', password);
 
-        String? cookie = Provider.of<CookieProvider>(context, listen: false).getCookie();
+        String? cookie =
+            Provider.of<CookieProvider>(context, listen: false).getCookie();
         if (cookie != null) {
           prefs.setString('cookie', cookie);
         }
@@ -174,15 +149,38 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider =
+        Provider.of<ThemeProvider>(context); // Get the theme provider
+
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.blue[200]!, Colors.blue[900]!],
+      appBar: AppBar(
+        title: Text('Đăng Nhập'),
+        actions: [
+          PopupMenuButton<ThemeMode>(
+            icon: Icon(Icons.settings_brightness),
+            onSelected: (ThemeMode newValue) {
+              themeProvider.toggleTheme(newValue);
+            },
+            itemBuilder: (BuildContext context) => [
+              PopupMenuItem(
+                value: ThemeMode.light,
+                child: Text('Sáng'),
+              ),
+              PopupMenuItem(
+                value: ThemeMode.dark,
+                child: Text('Tối'),
+              ),
+              PopupMenuItem(
+                value: ThemeMode.system,
+                child: Text('Hệ thống'),
+              ),
+            ],
           ),
-        ),
+        ],
+      ),
+      backgroundColor: Theme.of(context)
+          .scaffoldBackgroundColor, // Use the theme's background color
+      body: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Center(
           child: Column(
@@ -193,17 +191,43 @@ class _LoginScreenState extends State<LoginScreen> {
                 height: 120,
               ),
               SizedBox(height: 20),
+              Text(
+                'Đăng Nhập',
+                style: TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context)
+                      .textTheme
+                      .displayLarge
+                      ?.color, // Use the theme's text color
+                ),
+              ),
+              SizedBox(height: 20),
               TextField(
                 controller: _usernameController,
                 decoration: InputDecoration(
                   labelText: 'Mã sinh viên',
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   filled: true,
-                  fillColor: Colors.white,
-                  labelStyle: TextStyle(fontSize: 18),
-                  contentPadding: EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
+                  fillColor: Theme.of(context)
+                      .inputDecorationTheme
+                      .fillColor, // Use the theme's input field color
+                  labelStyle: TextStyle(
+                    color: Theme.of(context)
+                        .inputDecorationTheme
+                        .labelStyle
+                        ?.color, // Use the theme's label color
+                  ),
+                  contentPadding:
+                      EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
+                ),
+                style: TextStyle(
+                  color: Theme.of(context)
+                      .textTheme
+                      .bodyLarge
+                      ?.color, // Use the theme's body text color
                 ),
               ),
               SizedBox(height: 20),
@@ -212,15 +236,26 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: InputDecoration(
                   labelText: 'Mật khẩu',
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   filled: true,
-                  fillColor: Colors.white,
-                  labelStyle: TextStyle(fontSize: 18),
-                  contentPadding: EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
+                  fillColor: Theme.of(context)
+                      .inputDecorationTheme
+                      .fillColor, // Use the theme's input field color
+                  labelStyle: TextStyle(
+                    color: Theme.of(context)
+                        .inputDecorationTheme
+                        .labelStyle
+                        ?.color, // Use the theme's label color
+                  ),
+                  contentPadding:
+                      EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscureText ? Icons.visibility : Icons.visibility_off,
+                      color: Theme.of(context)
+                          .iconTheme
+                          .color, // Use the theme's icon color
                     ),
                     onPressed: () {
                       setState(() {
@@ -230,6 +265,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 obscureText: _obscureText,
+                style: TextStyle(
+                  color: Theme.of(context)
+                      .textTheme
+                      .bodyLarge
+                      ?.color, // Use the theme's body text color
+                ),
               ),
               SizedBox(height: 30),
               SizedBox(
@@ -246,15 +287,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   child: _isLoading
                       ? CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  )
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
+                        )
                       : Text(
-                    'Đăng nhập',
-                    style: TextStyle(
-                      fontSize: 20,
-                      color: Colors.white,
-                    ),
-                  ),
+                          'Đăng nhập',
+                          style: TextStyle(
+                            fontSize: 20,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ),
             ],

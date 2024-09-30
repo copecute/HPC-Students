@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:hpc_students/Screen/traCuuHocPhiScreen.dart';
 import 'package:hpc_students/Screen/traCuuLichHocScreen.dart';
 import 'package:hpc_students/Screen/TraCuuDiemRenLuyenScreen.dart';
@@ -14,16 +15,22 @@ import 'package:shared_preferences/shared_preferences.dart'; // Thư viện Shar
 import 'package:hpc_students/Screen/Blog/blogScreen.dart';
 import 'package:hpc_students/Screen/HomeScreen.dart';
 import 'package:hpc_students/Screen/menuScreen.dart';
-import 'package:firebase_core/firebase_core.dart'; // Import Firebase Core
+import 'include/theme_provider.dart'; // Import ThemeProvider
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Ensure binding is initialized
   await Firebase.initializeApp(); // Initialize Firebase
   setupHttpOverrides();
   runApp(
-    ChangeNotifierProvider(
-      create: (_) =>
-          CookieProvider(), // Cung cấp CookieProvider cho toàn bộ ứng dụng
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+            create: (_) =>
+                CookieProvider()), // Ensure CookieProvider is available
+        ChangeNotifierProvider(
+            create: (_) =>
+                ThemeProvider()), // Ensure ThemeProvider is available
+      ],
       child: MyApp(),
     ),
   );
@@ -32,29 +39,24 @@ void main() async {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: _checkLoginStatus(), // Hàm kiểm tra trạng thái đăng nhập
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return MaterialApp(
-            title: 'HPC Students',
-            theme: ThemeData(
-              primarySwatch: Colors.blue,
-            ),
-            home: Scaffold(
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    return MaterialApp(
+      title: 'HPC Students',
+      theme: themeProvider.lightTheme, // Light theme
+      darkTheme: themeProvider.darkTheme, // Dark theme
+      themeMode: themeProvider.themeMode, // Set the theme mode
+      home: FutureBuilder(
+        future: _checkLoginStatus(), // Hàm kiểm tra trạng thái đăng nhập
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Scaffold(
                 body: Center(
-                    child: CircularProgressIndicator())), // Hiển thị loading
-          );
-        } else {
-          return MaterialApp(
-            title: 'HPC Students',
-            theme: ThemeData(
-              primarySwatch: Colors.blue,
-            ),
-            home: LoginScreen(), // Mặc định là màn hình đăng nhập
-          );
-        }
-      },
+                    child: CircularProgressIndicator())); // Hiển thị loading
+          } else {
+            return LoginScreen(); // Mặc định là màn hình đăng nhập
+          }
+        },
+      ),
     );
   }
 
