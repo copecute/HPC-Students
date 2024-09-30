@@ -94,21 +94,25 @@ Future<String?> getAvatar(String maSinhVien, String dienThoai) async {
       if (timestamp != null) {
         DateTime lastUpdated = timestamp.toDate();
         if (DateTime.now().difference(lastUpdated).inHours >= 2) {
+          print("Timestamp is older than 2 hours, fetching new avatar.");
           // If timestamp is older than 2 hours, fetch a new avatar
           String? newAvatarUrl = await fetchAvatarFromZalo(dienThoai);
           if (newAvatarUrl != null) {
+            print("New avatar fetched: $newAvatarUrl");
             // Update the new avatar in Firebase
             await saveAvatarToFirebase(newAvatarUrl, dienThoai, maSinhVien);
             return newAvatarUrl; // Return the new avatar
           }
         } else {
+          print("Using existing avatar.");
           // If not older than 2 hours, return the existing avatar
           return avatarUrl;
         }
       }
     }
   } catch (e) {
-    print('Lỗi khi lấy avatar: $e');
+    print('Error fetching avatar: $e');
   }
+  print("No avatar found.");
   return null; // Return null if no avatar is found
 }

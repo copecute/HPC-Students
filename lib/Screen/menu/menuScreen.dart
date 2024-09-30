@@ -139,64 +139,68 @@ class _MenuScreenState extends State<MenuScreen> {
         onRefresh: _refreshData, // Call _refreshData when pulled down
         child: _isLoading
             ? Center(child: CircularProgressIndicator())
-            : Column(
-                children: [
-                  // Use ProfileCard widget and pass the necessary data
-                  ProfileCard(
-                    hoTen: _hoTen,
-                    dienThoai: _dienThoai,
-                    ngaySinh: _ngaySinh,
-                    gioiTinh: _gioiTinh,
-                    truongTHPT: _truongTHPT,
-                    cmnd: _cmnd,
-                    avatarUrl: _avatarUrl, // Ensure this is set correctly
-                  ),
-                  // GridView hiển thị các chức năng (scrollable)
-                  Expanded(
-                    child: GridView.builder(
-                      padding: EdgeInsets.all(10),
-                      itemCount: GridButton.getButtons().length,
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                      ),
-                      itemBuilder: (context, index) {
-                        final button = GridButton.getButtons()[index];
-                        return GridButton(
-                          id: button['id'],
-                          icon: button['icon'],
-                          label: button['label'],
-                          color: button['color'],
-                          onTap: () {
-                            _handleNavigation(context, button['id']);
-                          },
-                        );
-                      },
+            : SingleChildScrollView(
+                child: Column(
+                  children: [
+                    // Use ProfileCard widget and pass the necessary data
+                    ProfileCard(
+                      hoTen: _hoTen,
+                      dienThoai: _dienThoai,
+                      ngaySinh: _ngaySinh,
+                      gioiTinh: _gioiTinh,
+                      truongTHPT: _truongTHPT,
+                      cmnd: _cmnd,
+                      avatarUrl: _avatarUrl, // Ensure this is set correctly
                     ),
-                  ),
-                  // Nút đăng xuất (fixed)
-                  Padding(
-                    padding: const EdgeInsets.all(10.0),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        _showLogoutConfirmationDialog(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF2d59a4),
-                        padding: EdgeInsets.symmetric(vertical: 15),
-                        minimumSize: Size(double.infinity, 50),
+                    // GridView hiển thị các chức năng (scrollable)
+                    Padding(
+                      padding: const EdgeInsets.all(10.0),
+                      child: GridView.builder(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: GridButton.getButtons().length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                        ),
+                        itemBuilder: (context, index) {
+                          final button = GridButton.getButtons()[index];
+                          return GridButton(
+                            id: button['id'],
+                            icon: button['icon'],
+                            label: button['label'],
+                            color: button['color'],
+                            onTap: () {
+                              _handleNavigation(context, button['id']);
+                            },
+                          );
+                        },
                       ),
-                      child: Text(
-                        'Đăng xuất',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white,
+                    ),
+                    // Nút đăng xuất (fixed)
+                    Padding(
+                      padding: const EdgeInsets.all(10.0),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          _showLogoutConfirmationDialog(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF2d59a4),
+                          padding: EdgeInsets.symmetric(vertical: 15),
+                          minimumSize: Size(double.infinity, 50),
+                        ),
+                        child: Text(
+                          'Đăng xuất',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
       ),
     );

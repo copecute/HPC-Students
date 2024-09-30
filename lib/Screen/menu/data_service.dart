@@ -9,9 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hpc_students/include/cookie_provider.dart';
 import 'package:hpc_students/Screen/loginScreen.dart';
-import 'avatar_service.dart'; // Import the avatar service
-import 'package:hpc_students/Screen/menu/avatar_service.dart'
-    as avatarService; // Use alias
+import 'avatar_service.dart' as avatarService; // Import with alias
 
 Future<void> loadData(
     BuildContext context,
@@ -29,7 +27,7 @@ Future<void> loadData(
     Function(String) setCmnd // Callback for cmnd
     ) async {
   String? cookie =
-      Provider.of<CookieProvider>(context, listen: false).getCookie();
+  Provider.of<CookieProvider>(context, listen: false).getCookie();
 
   if (cookie == null || cookie.isEmpty) {
     Navigator.pushReplacement(
@@ -69,9 +67,8 @@ Future<void> loadData(
         String ngaySinh =
             document.getElementById("Ngay_sinh")?.attributes['value'] ?? '';
         String gioiTinh = document
-                .getElementById("ID_gioi_tinh")
-                ?.querySelector('option[selected]')
-                ?.text ??
+            .getElementById("ID_gioi_tinh")
+            ?.querySelector('option[selected]')?.text ??
             'Nam';
         String truongTHPT =
             document.getElementById("TruongTHPT")?.attributes['value'] ?? '';
@@ -111,7 +108,7 @@ Future<void> checkFirebaseForAvatar(
     Function(bool) setIsLoading,
     Function(bool) setIsFetched) async {
   final DatabaseReference ref =
-      FirebaseDatabase.instance.ref('Students_Profile/$maSinhVien');
+  FirebaseDatabase.instance.ref('Students_Profile/$maSinhVien');
   final DatabaseEvent event = await ref.once();
 
   if (event.snapshot.exists) {
@@ -123,13 +120,16 @@ Future<void> checkFirebaseForAvatar(
       DateTime timestamp = DateTime.parse(timestampString);
       if (DateTime.now().difference(timestamp).inHours >= 2) {
         // If the timestamp is older than 2 hours, fetch a new avatar
-        String? newAvatarUrl =
-            await avatarService.getAvatar(maSinhVien, dienThoai); // Use alias
-        setState(() {
-          setAvatarUrl(newAvatarUrl); // Update avatar URL
-          setIsFetched(true);
-          setIsLoading(false);
-        });
+        String? newAvatarUrl = await avatarService.fetchAvatarFromZalo(dienThoai);
+        if (newAvatarUrl != null) {
+          await avatarService.saveAvatarToFirebase(newAvatarUrl, dienThoai,
+              maSinhVien); // Save new avatar to Firebase
+          setState(() {
+            setAvatarUrl(newAvatarUrl); // Update avatar URL
+            setIsFetched(true);
+            setIsLoading(false);
+          });
+        }
       } else {
         // Use the existing avatar
         setState(() {
@@ -140,22 +140,28 @@ Future<void> checkFirebaseForAvatar(
       }
     } else {
       // If no avatar or timestamp, fetch a new avatar
-      String? newAvatarUrl = await avatarService.getAvatar(
-          maSinhVien, dienThoai); // Call getAvatar
+      String? newAvatarUrl = await avatarService.fetchAvatarFromZalo(dienThoai);
+      if (newAvatarUrl != null) {
+        await avatarService.saveAvatarToFirebase(
+            newAvatarUrl, dienThoai, maSinhVien); // Save new avatar to Firebase
+        setState(() {
+          setAvatarUrl(newAvatarUrl); // Update avatar URL
+          setIsFetched(true);
+          setIsLoading(false);
+        });
+      }
+    }
+  } else {
+    // If no data in Firebase, fetch a new avatar
+    String? newAvatarUrl = await avatarService.fetchAvatarFromZalo(dienThoai);
+    if (newAvatarUrl != null) {
+      await avatarService.saveAvatarToFirebase(
+          newAvatarUrl, dienThoai, maSinhVien); // Save new avatar to Firebase
       setState(() {
         setAvatarUrl(newAvatarUrl); // Update avatar URL
         setIsFetched(true);
         setIsLoading(false);
       });
     }
-  } else {
-    // If no data in Firebase, fetch a new avatar
-    String? newAvatarUrl =
-        await avatarService.getAvatar(maSinhVien, dienThoai); // Call getAvatar
-    setState(() {
-      setAvatarUrl(newAvatarUrl); // Update avatar URL
-      setIsFetched(true);
-      setIsLoading(false);
-    });
   }
 }

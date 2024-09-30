@@ -59,8 +59,8 @@ class GridButton extends StatelessWidget {
       },
       {
         'id': 3,
-        'icon': Icons.book,
-        'label': 'Mục tiêu tốt nghiệp',
+        'icon': Icons.car_rental,
+        'label': 'Vé ra vào',
         'color': Colors.red
       },
       {
@@ -77,14 +77,14 @@ class GridButton extends StatelessWidget {
       },
       {
         'id': 6,
-        'icon': Icons.alarm,
-        'label': 'Báo thức',
+        'icon': Icons.image,
+        'label': 'Chia sẻ ảnh',
         'color': Colors.deepOrange
       },
       {
         'id': 7,
-        'icon': Icons.sentiment_dissatisfied,
-        'label': 'Kỹ năng mềm',
+        'icon': Icons.sentiment_satisfied_alt_outlined,
+        'label': 'Lớp học Online',
         'color': Colors.teal
       },
       {
@@ -106,16 +106,22 @@ class GridButton extends StatelessWidget {
         'color': Colors.purple
       },
       {
-        'id': 11,
-        'icon': Icons.star,
-        'label': 'CLUB Thịt Chó Bách Khoa',
-        'color': Colors.red
+        'id': 10,
+        'icon': Icons.mark_email_unread_sharp,
+        'label': 'Yêu cầu xin giấy tờ',
+        'color': Colors.teal
       },
       {
         'id': 12,
         'icon': Icons.newspaper,
         'label': 'Bài viết',
         'color': Colors.blueGrey
+      },
+      {
+        'id': 11,
+        'icon': Icons.pets,
+        'label': 'CLUB Thịt Chó Bách Khoa',
+        'color': Colors.red
       },
     ];
   }
