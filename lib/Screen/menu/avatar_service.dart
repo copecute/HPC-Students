@@ -1,14 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:http/http.dart' as http;
 import 'dart:io';
+import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
-import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:hpc_students/Screen/menu/avatar_service.dart'
-    hide
-        fetchAvatarFromZalo,
-        saveAvatarToFirebase,
-        getAvatar; // Hide the functions
 
 Future<void> saveAvatarToFirebase(
     String? avatarUrl, String dienThoai, String maSinhVien) async {
@@ -26,34 +19,26 @@ Future<void> saveAvatarToFirebase(
         if (data['avatar'] != avatarUrl) needsUpdate = true;
 
         if (needsUpdate) {
-          // Cập nhật dữ liệu nếu có thay đổi
+          // Update data if there are changes
           await students.doc(maSinhVien).update({
             'avatar': avatarUrl,
             'timestamp': FieldValue.serverTimestamp(), // Update timestamp
           });
           print("Cập nhật avatar lên Firebase: $avatarUrl");
-          print("Mã sinh viên: $maSinhVien");
-          print("Điện thoại: $dienThoai");
         } else {
           print("Avatar đã đúng, không cần cập nhật");
-          print("Mã sinh viên: $maSinhVien");
-          print("Điện thoại: $dienThoai");
         }
       } else {
-        // Tạo mới dữ liệu nếu chưa tồn tại
+        // Create new data if it doesn't exist
         await students.doc(maSinhVien).set({
           'avatar': avatarUrl,
           'dienThoai': dienThoai,
           'timestamp': FieldValue.serverTimestamp(), // Save current timestamp
         });
         print("Tạo mới $maSinhVien và lưu avatar lên Firebase: $avatarUrl");
-        print("Mã sinh viên: $maSinhVien");
-        print("Điện thoại: $dienThoai");
       }
     } catch (e) {
       print('Lỗi khi lưu avatar lên Firebase: $e');
-      print("Mã sinh viên: $maSinhVien");
-      print("Điện thoại: $dienThoai");
     }
   }
 }
@@ -93,7 +78,7 @@ Future<String?> fetchAvatarFromZalo(String dienThoai) async {
   }
 }
 
-Future<String?> getAvatar(String dienThoai, String maSinhVien) async {
+Future<String?> getAvatar(String maSinhVien, String dienThoai) async {
   CollectionReference students =
       FirebaseFirestore.instance.collection('Students_Profile');
 
@@ -105,19 +90,19 @@ Future<String?> getAvatar(String dienThoai, String maSinhVien) async {
       String? avatarUrl = data['avatar'];
       Timestamp? timestamp = data['timestamp'];
 
-      // Kiểm tra timestamp
+      // Check timestamp
       if (timestamp != null) {
         DateTime lastUpdated = timestamp.toDate();
         if (DateTime.now().difference(lastUpdated).inHours >= 2) {
-          // Nếu timestamp cũ hơn 2 giờ, lấy avatar mới từ Zalo
+          // If timestamp is older than 2 hours, fetch a new avatar
           String? newAvatarUrl = await fetchAvatarFromZalo(dienThoai);
           if (newAvatarUrl != null) {
-            // Cập nhật avatar mới vào Firebase
+            // Update the new avatar in Firebase
             await saveAvatarToFirebase(newAvatarUrl, dienThoai, maSinhVien);
-            return newAvatarUrl; // Trả về avatar mới
+            return newAvatarUrl; // Return the new avatar
           }
         } else {
-          // Nếu không cũ hơn 2 giờ, trả về avatar hiện tại
+          // If not older than 2 hours, return the existing avatar
           return avatarUrl;
         }
       }
@@ -125,5 +110,5 @@ Future<String?> getAvatar(String dienThoai, String maSinhVien) async {
   } catch (e) {
     print('Lỗi khi lấy avatar: $e');
   }
-  return null; // Trả về null nếu không có avatar
+  return null; // Return null if no avatar is found
 }
