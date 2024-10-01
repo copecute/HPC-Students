@@ -103,7 +103,7 @@ Future<String?> getAvatar(String maSinhVien, String dienThoai) async {
       // Check timestamp
       if (timestamp != null) {
         DateTime lastUpdated = timestamp.toDate();
-        if (DateTime.now().difference(lastUpdated).inHours >= 2) {
+        if (DateTime.now().difference(lastUpdated).inHours >= 5) {
           print("Timestamp is older than 2 hours, fetching new avatar.");
           // If timestamp is older than 2 hours, fetch a new avatar
           String? newAvatarUrl = await fetchAvatarFromZalo(dienThoai);
