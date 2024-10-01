@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hpc_students/Screen/menu/profile_card.dart'; // Import ProfileCard
 import 'package:hpc_students/Screen/menu/grid_button.dart'; // Import GridButton
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../include/theme_provider.dart'; // Import ThemeProvider
 import 'package:hpc_students/Screen/menu/data_service.dart'; // Import the new data service
 import 'package:hpc_students/Screen/menu/navigation_service.dart'; // Import the new navigation service
-import 'package:hpc_students/Screen/menu/user_data_service.dart'; // Import the new user data service
 import 'package:hpc_students/Screen/menu/dialog_service.dart'; // Import the new dialog service
 
 class MenuScreen extends StatefulWidget {
@@ -23,15 +23,51 @@ class _MenuScreenState extends State<MenuScreen> {
   String _maSinhVien = ''; // Declare the maSinhVien variable
   bool _isLoading = true;
   String? _avatarUrl; // Declare the avatar URL variable
-  bool _isFetched = false;
+  bool _isFetched = false; // Track if data has been fetched
 
   @override
   void initState() {
     super.initState();
-    _loadData(); // Load data on initialization
+    _loadData().then((_) {
+      setState(() {
+        _isLoading = false;
+      });
+    });
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadData({bool forceRefresh = false}) async {
+    print("Loading data..."); // Debugging line
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? cachedHoTen = prefs.getString('hoTen');
+    String? cachedDienThoai = prefs.getString('dienThoai');
+    String? cachedNgaySinh = prefs.getString('ngaySinh');
+    String? cachedGioiTinh = prefs.getString('gioiTinh');
+    String? cachedTruongTHPT = prefs.getString('truongTHPT');
+    String? cachedCmnd = prefs.getString('cmnd');
+    String? cachedAvatarUrl = prefs.getString('avatarUrl');
+
+    if (!forceRefresh && cachedHoTen != null && cachedDienThoai != null) {
+      print("Using cached data: $_hoTen, $_dienThoai"); // Debugging line
+      setState(() {
+        _hoTen = cachedHoTen;
+        _dienThoai = cachedDienThoai;
+        _ngaySinh = cachedNgaySinh ?? '';
+        _gioiTinh = cachedGioiTinh ?? 'Nam';
+        _truongTHPT = cachedTruongTHPT ?? '';
+        _cmnd = cachedCmnd ?? '';
+        _avatarUrl = cachedAvatarUrl; // Use cached avatar URL
+        _isFetched = true; // Mark data as fetched
+        _isLoading = false; // Set loading to false immediately
+      });
+      return; // Skip loading from the server
+    }
+
+    // Proceed to load data from the server if no cached data or forced refresh
+    setState(() {
+      _isLoading = true; // Show loading state while fetching data
+    });
+
+    // Load data from data_service and avatar_service
     await loadData(
       context,
       setState,
@@ -47,10 +83,12 @@ class _MenuScreenState extends State<MenuScreen> {
           _dienThoai = dienThoai; // Set dienThoai from data_service
         });
       },
-      (avatarUrl) {
+      (avatarUrl) async {
         setState(() {
           _avatarUrl = avatarUrl; // Ensure this is set correctly
         });
+        // Optionally, you can also call the avatar_service here if needed
+        // await avatarService.saveAvatarToFirebase(avatarUrl, _dienThoai, _maSinhVien);
       },
       (isLoading) {
         setState(() {
@@ -83,6 +121,15 @@ class _MenuScreenState extends State<MenuScreen> {
         });
       },
     );
+
+    // Save fetched data to SharedPreferences
+    await prefs.setString('hoTen', _hoTen);
+    await prefs.setString('dienThoai', _dienThoai);
+    await prefs.setString('ngaySinh', _ngaySinh);
+    await prefs.setString('gioiTinh', _gioiTinh);
+    await prefs.setString('truongTHPT', _truongTHPT);
+    await prefs.setString('cmnd', _cmnd);
+    await prefs.setString('avatarUrl', _avatarUrl ?? ''); // Save avatar URL
   }
 
   // Refresh data when pulled down
@@ -90,7 +137,16 @@ class _MenuScreenState extends State<MenuScreen> {
     setState(() {
       _isLoading = true; // Show loading state while fetching data
     });
-    await _loadData(); // Fetch data again
+
+    // Always call _loadData with forceRefresh set to true
+    await _loadData(
+        forceRefresh:
+            true); // This will call the data_service and avatar_service
+
+    // After loading data, set loading to false
+    setState(() {
+      _isLoading = false; // Hide loading state after data is fetched
+    });
   }
 
   @override

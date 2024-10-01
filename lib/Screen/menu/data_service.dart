@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:hpc_students/Screen/profile.dart';
 import 'package:hpc_students/include/config.dart';
-import 'package:firebase_database/firebase_database.dart'; // Import Firebase Database
+import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
 import 'package:flutter/material.dart';
 import 'package:http/io_client.dart';
 import 'package:html/parser.dart' as htmlParser;
@@ -26,10 +26,12 @@ Future<void> loadData(
     Function(String) setTruongTHPT, // Callback for truongTHPT
     Function(String) setCmnd // Callback for cmnd
     ) async {
+  print("Starting to load data...");
   String? cookie =
-  Provider.of<CookieProvider>(context, listen: false).getCookie();
+      Provider.of<CookieProvider>(context, listen: false).getCookie();
 
   if (cookie == null || cookie.isEmpty) {
+    print("No cookie found, redirecting to login.");
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => LoginScreen()),
@@ -56,6 +58,7 @@ Future<void> loadData(
     );
 
     if (response.statusCode == 200) {
+      print("Data loaded successfully.");
       var document = htmlParser.parse(response.body);
 
       setState(() {
@@ -67,8 +70,9 @@ Future<void> loadData(
         String ngaySinh =
             document.getElementById("Ngay_sinh")?.attributes['value'] ?? '';
         String gioiTinh = document
-            .getElementById("ID_gioi_tinh")
-            ?.querySelector('option[selected]')?.text ??
+                .getElementById("ID_gioi_tinh")
+                ?.querySelector('option[selected]')
+                ?.text ??
             'Nam';
         String truongTHPT =
             document.getElementById("TruongTHPT")?.attributes['value'] ?? '';
@@ -90,9 +94,11 @@ Future<void> loadData(
       await checkFirebaseForAvatar(context, maSinhVien, dienThoai, setState,
           setAvatarUrl, setIsLoading, setIsFetched);
     } else {
+      print("Failed to load data, status code: ${response.statusCode}");
       setIsLoading(false);
     }
   } catch (e) {
+    print("Error loading data: $e");
     setIsLoading(false);
   } finally {
     ioClient.close();
@@ -107,43 +113,76 @@ Future<void> checkFirebaseForAvatar(
     Function(String?) setAvatarUrl,
     Function(bool) setIsLoading,
     Function(bool) setIsFetched) async {
-  final DatabaseReference ref =
-  FirebaseDatabase.instance.ref('Students_Profile/$maSinhVien');
-  final DatabaseEvent event = await ref.once();
+  final DocumentReference ref =
+      FirebaseFirestore.instance.collection('Students_Profile').doc(maSinhVien);
 
-  if (event.snapshot.exists) {
-    final data = event.snapshot.value as Map<dynamic, dynamic>;
-    String? avatarUrl = data['avatar'];
-    String? timestampString = data['timestamp'];
+  print("Checking Firestore for avatar... $maSinhVien");
 
-    if (avatarUrl != null && timestampString != null) {
-      DateTime timestamp = DateTime.parse(timestampString);
-      if (DateTime.now().difference(timestamp).inHours >= 2) {
-        // If the timestamp is older than 2 hours, fetch a new avatar
-        String? newAvatarUrl = await avatarService.fetchAvatarFromZalo(dienThoai);
+  try {
+    final DocumentSnapshot snapshot = await ref.get();
+
+    if (snapshot.exists) {
+      print("Avatar data found in Firestore.");
+      final data = snapshot.data() as Map<String, dynamic>;
+      String? avatarUrl = data['avatar'];
+      Timestamp? timestamp = data['timestamp']; // Change to Timestamp
+
+      if (avatarUrl != null && timestamp != null) {
+        DateTime timestampDateTime =
+            timestamp.toDate(); // Convert Timestamp to DateTime
+        DateTime now = DateTime.now(); // Get current time
+        Duration difference =
+            now.difference(timestampDateTime); // Calculate difference
+
+        print("Current time: $now");
+        print("Timestamp time: $timestampDateTime");
+        print("Difference in hours: ${difference.inHours}");
+
+        if (difference.inHours >= 2) {
+          // If the timestamp is older than 2 hours, fetch a new avatar
+          print("Avatar is old, fetching a new one.");
+          String? newAvatarUrl =
+              await avatarService.fetchAvatarFromZalo(dienThoai);
+          if (newAvatarUrl != null) {
+            await avatarService.saveAvatarToFirebase(newAvatarUrl, dienThoai,
+                maSinhVien); // Save new avatar to Firestore
+            setState(() {
+              setAvatarUrl(newAvatarUrl); // Update avatar URL
+              setIsFetched(true);
+              setIsLoading(false);
+            });
+          }
+        } else {
+          // Use the existing avatar
+          print("Using existing avatar.");
+          setState(() {
+            setAvatarUrl(avatarUrl); // Use existing avatar
+            setIsFetched(true);
+            setIsLoading(false);
+          });
+        }
+      } else {
+        // If no avatar or timestamp, fetch a new avatar
+        print("No avatar or timestamp, fetching a new avatar.");
+        String? newAvatarUrl =
+            await avatarService.fetchAvatarFromZalo(dienThoai);
         if (newAvatarUrl != null) {
           await avatarService.saveAvatarToFirebase(newAvatarUrl, dienThoai,
-              maSinhVien); // Save new avatar to Firebase
+              maSinhVien); // Save new avatar to Firestore
           setState(() {
             setAvatarUrl(newAvatarUrl); // Update avatar URL
             setIsFetched(true);
             setIsLoading(false);
           });
         }
-      } else {
-        // Use the existing avatar
-        setState(() {
-          setAvatarUrl(avatarUrl); // Use existing avatar
-          setIsFetched(true);
-          setIsLoading(false);
-        });
       }
     } else {
-      // If no avatar or timestamp, fetch a new avatar
+      // If no data in Firestore, fetch a new avatar
+      print("No data in Firestore, fetching a new avatar.");
       String? newAvatarUrl = await avatarService.fetchAvatarFromZalo(dienThoai);
       if (newAvatarUrl != null) {
-        await avatarService.saveAvatarToFirebase(
-            newAvatarUrl, dienThoai, maSinhVien); // Save new avatar to Firebase
+        await avatarService.saveAvatarToFirebase(newAvatarUrl, dienThoai,
+            maSinhVien); // Save new avatar to Firestore
         setState(() {
           setAvatarUrl(newAvatarUrl); // Update avatar URL
           setIsFetched(true);
@@ -151,17 +190,8 @@ Future<void> checkFirebaseForAvatar(
         });
       }
     }
-  } else {
-    // If no data in Firebase, fetch a new avatar
-    String? newAvatarUrl = await avatarService.fetchAvatarFromZalo(dienThoai);
-    if (newAvatarUrl != null) {
-      await avatarService.saveAvatarToFirebase(
-          newAvatarUrl, dienThoai, maSinhVien); // Save new avatar to Firebase
-      setState(() {
-        setAvatarUrl(newAvatarUrl); // Update avatar URL
-        setIsFetched(true);
-        setIsLoading(false);
-      });
-    }
+  } catch (e) {
+    print("Error checking Firestore: $e");
+    setIsLoading(false);
   }
 }
