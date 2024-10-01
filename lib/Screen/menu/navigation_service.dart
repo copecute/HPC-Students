@@ -44,7 +44,7 @@ Future<void> handleNavigation(BuildContext context, int id) async {
         );
       } else {
         // Handle case where username is not found
-        showSnackBar(context, 'Tên người dùng không tồn tại.');
+        showSnackBar(context, 'Vui lòng đăng nhập lại!');
       }
       break;
     case 8:

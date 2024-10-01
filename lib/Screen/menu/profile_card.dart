@@ -46,10 +46,9 @@ class ProfileCard extends StatelessWidget {
               Center(
                 child: CircleAvatar(
                   radius: 40,
-                  backgroundImage: avatarUrl != null
+                  backgroundImage: (avatarUrl != null && avatarUrl!.isNotEmpty)
                       ? NetworkImage(avatarUrl!)
-                      : AssetImage(
-                          'assets/avatar.png'), // Use fetched avatar or local image
+                      : AssetImage('assets/avatar.png') as ImageProvider, // Dùng ảnh tải từ mạng hoặc ảnh local
                 ),
               ),
               SizedBox(height: 16),

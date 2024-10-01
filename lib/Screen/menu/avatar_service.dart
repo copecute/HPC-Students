@@ -5,41 +5,51 @@ import 'package:http/io_client.dart';
 
 Future<void> saveAvatarToFirebase(
     String? avatarUrl, String dienThoai, String maSinhVien) async {
-  if (avatarUrl != null && avatarUrl.isNotEmpty) {
-    CollectionReference students =
-        FirebaseFirestore.instance.collection('Students_Profile');
+  if (avatarUrl == null || avatarUrl.isEmpty) {
+    print("Avatar URL is null or empty, not updating Firestore.");
+    return; // Exit if the avatar URL is invalid
+  }
 
-    try {
-      DocumentSnapshot doc = await students.doc(maSinhVien).get();
-      bool needsUpdate = false;
+  CollectionReference students =
+      FirebaseFirestore.instance.collection('Students_Profile');
 
-      if (doc.exists) {
-        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+  try {
+    DocumentSnapshot doc = await students.doc(maSinhVien).get();
+    bool needsUpdate = false;
 
-        if (data['avatar'] != avatarUrl) needsUpdate = true;
+    if (doc.exists) {
+      Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
 
-        if (needsUpdate) {
-          // Update data if there are changes
-          await students.doc(maSinhVien).update({
-            'avatar': avatarUrl,
-            'timestamp': FieldValue.serverTimestamp(), // Update timestamp
-          });
-          print("Cập nhật avatar lên Firebase: $avatarUrl");
-        } else {
-          print("Avatar đã đúng, không cần cập nhật");
-        }
-      } else {
-        // Create new data if it doesn't exist
-        await students.doc(maSinhVien).set({
-          'avatar': avatarUrl,
-          'dienThoai': dienThoai,
-          'timestamp': FieldValue.serverTimestamp(), // Save current timestamp
-        });
-        print("Tạo mới $maSinhVien và lưu avatar lên Firebase: $avatarUrl");
+      if (data['avatar'] != avatarUrl) {
+        needsUpdate = true; // Avatar URL has changed
       }
-    } catch (e) {
-      print('Lỗi khi lưu avatar lên Firebase: $e');
+
+      // Always update the timestamp
+      await students.doc(maSinhVien).update({
+        'timestamp':
+            FieldValue.serverTimestamp(), // Update timestamp to current time
+      });
+
+      if (needsUpdate) {
+        // Update avatar if it has changed
+        await students.doc(maSinhVien).update({
+          'avatar': avatarUrl,
+        });
+        print("Cập nhật avatar lên Firebase: $avatarUrl");
+      } else {
+        print("Avatar đã đúng, không cần cập nhật.");
+      }
+    } else {
+      // Create new data if it doesn't exist
+      await students.doc(maSinhVien).set({
+        'avatar': avatarUrl,
+        'dienThoai': dienThoai,
+        'timestamp': FieldValue.serverTimestamp(), // Save current timestamp
+      });
+      print("Tạo mới $maSinhVien và lưu avatar lên Firebase: $avatarUrl");
     }
+  } catch (e) {
+    print('Lỗi khi lưu avatar lên Firebase: $e');
   }
 }
 
@@ -94,21 +104,27 @@ Future<String?> getAvatar(String maSinhVien, String dienThoai) async {
       if (timestamp != null) {
         DateTime lastUpdated = timestamp.toDate();
         if (DateTime.now().difference(lastUpdated).inHours >= 2) {
+          print("Timestamp is older than 2 hours, fetching new avatar.");
           // If timestamp is older than 2 hours, fetch a new avatar
           String? newAvatarUrl = await fetchAvatarFromZalo(dienThoai);
-          if (newAvatarUrl != null) {
+          if (newAvatarUrl != null && newAvatarUrl.isNotEmpty) {
+            print("New avatar fetched: $newAvatarUrl");
             // Update the new avatar in Firebase
             await saveAvatarToFirebase(newAvatarUrl, dienThoai, maSinhVien);
             return newAvatarUrl; // Return the new avatar
+          } else {
+            print("Fetched avatar is null or empty, not updating Firestore.");
           }
         } else {
+          print("Using existing avatar.");
           // If not older than 2 hours, return the existing avatar
           return avatarUrl;
         }
       }
     }
   } catch (e) {
-    print('Lỗi khi lấy avatar: $e');
+    print('Error fetching avatar: $e');
   }
+  print("No avatar found.");
   return null; // Return null if no avatar is found
 }
