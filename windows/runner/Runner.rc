@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "hpcs" "\0"
+            VALUE "CompanyName", "com.copecute" "\0"
+            VALUE "FileDescription", "hpcstudents" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "hpcs" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2024 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "hpcs.exe" "\0"
-            VALUE "ProductName", "hpcs" "\0"
+            VALUE "InternalName", "hpcstudents" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2024 com.copecute. All rights reserved." "\0"
+            VALUE "OriginalFilename", "hpcstudents.exe" "\0"
+            VALUE "ProductName", "hpcstudents" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

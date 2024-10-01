@@ -1,6 +1,6 @@
 {
-    "name": "hpcs",
-    "short_name": "hpcs",
+    "name": "hpcstudents",
+    "short_name": "hpcstudents",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

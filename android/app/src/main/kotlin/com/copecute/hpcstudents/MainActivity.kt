@@ -1,4 +1,4 @@
-package com.example.hpcs
+package com.copecute.hpcstudents
 
 import io.flutter.embedding.android.FlutterActivity
 
