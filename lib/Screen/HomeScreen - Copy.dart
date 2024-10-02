@@ -1,12 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hpc_students/Screen/TraCuuDiemRenLuyenScreen.dart';
-import 'package:hpc_students/Screen/menu/menuScreen.dart';
-import 'package:hpc_students/Screen/rankScreen.dart';
-import 'package:hpc_students/Screen/timNguoiYeu/chat.dart';
-import 'package:hpc_students/Screen/traCuuHocPhiScreen.dart';
-import 'package:hpc_students/Screen/traCuuLichHocScreen.dart';
-import 'package:hpc_students/Screen/traDiemScreen.dart';
-import 'package:hpc_students/include/theme_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:http/io_client.dart';
 import 'dart:io';
@@ -20,9 +12,7 @@ import 'loginScreen.dart';
 import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Thư viện SharedPreferences
-import 'package:fl_chart/fl_chart.dart';
-
-import 'menu/navigation_service.dart'; // Import the fl_chart package
+import 'package:fl_chart/fl_chart.dart'; // Import the fl_chart package
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -34,7 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _trangThai = '';
   String _maSinhVien = '';
   String _tinChiTichLuy = '';
-  String _tbcTichLuy = '0';
+  String _tbcTichLuy = '0'; // Set TBC tích lũy to 7.1
   String _xepLoaiHT = '';
   bool _isLoading = true;
   List<Map<String, String>> _blogPosts = [];
@@ -159,8 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _isLoading = true; // Set loading state
     });
 
-    String url =
-        'https://www.blogger.com/feeds/$blogID/posts/default?max-results=5';
+    String url = 'https://www.blogger.com/feeds/$blogID/posts/default';
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
@@ -287,6 +276,106 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Sample data for the chart
+  List<BarChartGroupData> _getBarChartData() {
+    // Split the _tinChiTichLuy string to get accumulated and registered credits
+    List<String> credits = _tinChiTichLuy.split(' / ');
+    double accumulatedCredits =
+        double.tryParse(credits[0]) ?? 0.0; // Parse accumulated credits
+    double registeredCredits = credits.length > 1
+        ? double.tryParse(credits[1]) ?? 0.0
+        : 0.0; // Parse registered credits
+
+    return [
+      BarChartGroupData(x: 0, barRods: [
+        BarChartRodData(
+          toY: accumulatedCredits,
+          color: Colors.blue,
+          width: 30, // Set the width of the bar
+          backDrawRodData: BackgroundBarChartRodData(
+            show: true,
+            toY: registeredCredits, // Background bar for registered credits
+            color: Colors.red.withOpacity(0.3), // Background color
+          ),
+        ),
+      ]),
+      BarChartGroupData(x: 1, barRods: [
+        BarChartRodData(
+          toY: registeredCredits,
+          color: Colors.red,
+          width: 30, // Set the width of the bar
+        ),
+      ]),
+    ];
+  }
+
+  // Method to build the bar chart
+  Widget _buildBarChart() {
+    return Container(
+      height: 200, // Set the height of the chart
+      child: BarChart(
+        BarChartData(
+          barGroups: _getBarChartData(),
+          titlesData: FlTitlesData(
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(showTitles: true),
+            ),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) {
+                  switch (value.toInt()) {
+                    case 0:
+                      return Text('Tín chỉ tích lũy');
+                    case 1:
+                      return Text('Tín chỉ đăng ký');
+                    default:
+                      return Text('');
+                  }
+                },
+              ),
+            ),
+          ),
+          borderData: FlBorderData(show: false),
+          gridData: FlGridData(show: false),
+          barTouchData: BarTouchData(
+            touchTooltipData: BarTouchTooltipData(
+              // Use the new way to set the tooltip background color
+              tooltipMargin: 8,
+              tooltipPadding: const EdgeInsets.all(8),
+              getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                String title;
+                switch (group.x.toInt()) {
+                  case 0:
+                    title = 'Tín chỉ tích lũy';
+                    break;
+                  case 1:
+                    title = 'Tín chỉ đăng ký';
+                    break;
+                  default:
+                    title = '';
+                }
+                return BarTooltipItem(
+                  title + '\n',
+                  TextStyle(color: Colors.white),
+                  children: [
+                    TextSpan(
+                      text: rod.toY.toString(),
+                      style: TextStyle(
+                        color: Colors.yellow,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   // Define the _buildCategoryItem method
   Widget _buildCategoryItem(IconData icon, String title) {
     return Material(
@@ -295,70 +384,19 @@ class _HomeScreenState extends State<HomeScreen> {
       child: InkWell(
         borderRadius: BorderRadius.circular(12), // Match the border radius
         onTap: () {
-          // Handle tap action using switch case
-          switch (title) {
-            case 'Thời khoá biểu':
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => TraCuuLichHocScreen()),
-              );
-              break;
-            case 'Kết quả học tập':
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => TraDiemScreen()),
-              );
-              break;
-            case 'Học phí':
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => TraCuuHocPhiScreen()),
-              );
-              break;
-            case 'Điểm rèn luyện':
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => TraCuuDiemRenLuyenScreen()),
-              );
-              break;
-            case 'Tìm người yêu':
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => ChatScreen(username: _maSinhVien)),
-              );
-              print("vào chat với username $_maSinhVien");
-              break;
-            case 'HPC Ranking':
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => RankScreen()),
-              );
-              break;
-            case 'Vé ra vào':
-              showSnackBar(context, 'Chưa có chức năng này!');
-              break;
-            case 'Tất cả':
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => MenuScreen()),
-              );
-              break;
-            default:
-              showSnackBar(context, 'Chưa có chức năng này!');
-          }
+          // Handle tap action here
+          print('$title tapped'); // Example action
         },
         child: Container(
           padding: EdgeInsets.all(0), // Reduced padding inside the container
           decoration: BoxDecoration(
+            // color: Colors.white, // Background color
             borderRadius: BorderRadius.circular(12), // Rounded corners
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 30, color: Color(0xFF2d59a4)), // Reduced icon size
+              Icon(icon, size: 30, color: Colors.blue), // Reduced icon size
               SizedBox(height: 6), // Reduced space between icon and text
               Text(
                 title,
@@ -376,93 +414,63 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider =
-    Provider.of<ThemeProvider>(context); // Get the theme provider
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Xin chào! $_hoTen',
-          style: TextStyle(
-            fontSize: 20,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: Color(0xFF2d59a4),
-        actions: [
-          PopupMenuButton<ThemeMode>(
-            icon: Icon(
-              themeProvider.themeMode == ThemeMode.dark
-                  ? Icons.wb_sunny // Sun icon for light theme
-                  : Icons.nights_stay, // Moon icon for dark theme
-            ),
-            onSelected: (ThemeMode newValue) {
-              themeProvider.toggleTheme(newValue);
-            },
-            itemBuilder: (BuildContext context) => [
-              PopupMenuItem(
-                value: ThemeMode.light,
-                child: Text('Sáng'),
-              ),
-              PopupMenuItem(
-                value: ThemeMode.dark,
-                child: Text('Tối'),
-              ),
-              PopupMenuItem(
-                value: ThemeMode.system,
-                child: Text('Hệ thống'),
-              ),
-            ],
-          ),
-        ],
-      ),
       body: RefreshIndicator(
         onRefresh: _refreshData, // Thao tác kéo để làm mới
         child: _isLoading
-            ? Center(child: CircularProgressIndicator()) // Hiển thị loading
+            ? Center(
+                child: CircularProgressIndicator()) // Show loading indicator
             : SingleChildScrollView(
                 child: Column(
                   children: [
-                    SizedBox(height: 10),
-                    Container(
-                      width: double
-                          .infinity, // Đảm bảo Card chiếm toàn bộ chiều rộng
-                      child: Card(
-                        margin: EdgeInsets.all(0),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        elevation: 4,
-                        child: Padding(
-                          padding: const EdgeInsets.all(20.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.max,
-                            children: [
-                              SizedBox(height: 5),
-                              Text(
-                                'TBC tích lũy $_tbcTichLuy, Xếp loại $_xepLoaiHT',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                ),
+                    SizedBox(height: 20),
+                    Card(
+                      margin: EdgeInsets.all(20),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      elevation: 8,
+                      child: Padding(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.max,
+                          children: [
+                            SizedBox(height: 10),
+                            Text(
+                              'Xin chào! $_hoTen',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
                               ),
-                              SizedBox(height: 5),
-                              Text(
-                                'Tín chỉ tích lũy $_tinChiTichLuy',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                ),
+                            ),
+                            SizedBox(height: 5),
+                            Text(
+                              'TBC tích lũy $_tbcTichLuy Xếp loại $_xepLoaiHT',
+                              style: TextStyle(
+                                fontSize: 16, // Giảm kích thước font
                               ),
-                            ],
-                          ),
+                            ),
+                            Text(
+                              'Xếp loại học tập $_xepLoaiHT',
+                              style: TextStyle(
+                                fontSize: 16, // Giảm kích thước font
+                              ),
+                            ),
+                            SizedBox(height: 5),
+                            Text(
+                              'Tín chỉ tích lũy $_tinChiTichLuy',
+                              style: TextStyle(
+                                fontSize: 16, // Giảm kích thước font
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
+                    _buildBarChart(), // Call the bar chart method
 
-                    SizedBox(height: 20),
-                    // Danh mục
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                      padding: const EdgeInsets.only(left: 10.0, right: 10.0),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -473,40 +481,52 @@ class _HomeScreenState extends State<HomeScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      BlogScreen(), // Navigate to BlogScreen
+                                ),
+                              );
+                            },
+                            child: Text(
+                              'Tùy chỉnh >',
+                              style: TextStyle(
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                    SizedBox(height: 20),
-
+                    // Danh mục section
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 0.0, // Reduced top padding to 0
+                          horizontal: 10.0),
                       child: GridView.count(
                         shrinkWrap: true,
                         physics: NeverScrollableScrollPhysics(),
-                        crossAxisCount: 4,
-                        // 4 mục trong một dòng
-                        crossAxisSpacing: 8,
-                        // Khoảng cách giữa các cột
-                        mainAxisSpacing: 8,
-                        // Khoảng cách giữa các hàng
+                        crossAxisCount:
+                            4, // Change to 4 to fit four buttons in one row
+                        crossAxisSpacing: 8, // Adjust spacing between columns
+                        mainAxisSpacing: 8, // Adjust spacing between rows
                         children: [
                           _buildCategoryItem(
-                              Icons.calendar_today, 'Thời khoá biểu'),
-                          _buildCategoryItem(
-                              Icons.add_chart, 'Kết quả học tập'),
-                          _buildCategoryItem(Icons.monetization_on, 'Học phí'),
-                          _buildCategoryItem(Icons.score, 'Điểm rèn luyện'),
-                          _buildCategoryItem(Icons.favorite, 'Tìm người yêu'),
-                          _buildCategoryItem(Icons.stars, 'HPC Ranking'),
-                          _buildCategoryItem(Icons.car_rental, 'Vé ra vào'),
+                              Icons.calendar_today, 'Lịch công tác'),
+                          _buildCategoryItem(Icons.notifications, 'Thông báo'),
+                          _buildCategoryItem(Icons.mail, 'Hộp thư'),
+                          _buildCategoryItem(Icons.contact_mail, 'Liên hệ'),
+                          _buildCategoryItem(Icons.work, 'Công việc'),
+                          _buildCategoryItem(Icons.folder, 'Tài nguyên'),
+                          _buildCategoryItem(Icons.money, 'Xem lương'),
                           _buildCategoryItem(Icons.grid_view, 'Tất cả'),
                         ],
                       ),
                     ),
 
-                    SizedBox(height: 20),
-
-                    // Tin tức section
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Row(
@@ -524,7 +544,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => BlogScreen(),
+                                  builder: (context) =>
+                                      BlogScreen(), // Navigate to BlogScreen
                                 ),
                               );
                             },
@@ -538,96 +559,55 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                     ),
-
-                    // Danh sách tin tức theo chiều ngang
+                    // Sử dụng ListView để hiển thị tin tức theo chiều ngang
                     Container(
-                      height: 150, // Chiều cao cố định cho phần tin tức
+                      height: 200, // Set a fixed height for the news section
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
                         itemCount: _blogPosts.length,
                         itemBuilder: (context, index) {
-                          return Container(
-                            width: 350, // Chiều rộng cố định cho mỗi Card
-                            margin: EdgeInsets.symmetric(horizontal: 8),
-                            child: Card(
-                              elevation: 4,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: InkWell(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => BlogDetailScreen(
-                                        postUrl: _blogPosts[index]['self']!,
+                          return Card(
+                            elevation: 4,
+                            child: InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => BlogDetailScreen(
+                                        postUrl: _blogPosts[index]['self']!),
+                                  ),
+                                );
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Image display for each blog post
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(
+                                          8.0), // Rounded corners
+                                      child: Image.network(
+                                        _blogPosts[index]['image'] ?? '',
+                                        width:
+                                            150, // Set a fixed width for the image
+                                        height:
+                                            100, // Set a fixed height for the image
+                                        fit: BoxFit.cover,
                                       ),
                                     ),
-                                  );
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Row(
-                                    children: [
-                                      // Ảnh nằm bên trái
-                                      ClipRRect(
-                                        borderRadius:
-                                            BorderRadius.circular(8.0),
-                                        child: Image.network(
-                                          _blogPosts[index]['image'] ?? '',
-                                          width:
-                                              120, // Kích thước chiều rộng cố định
-                                          height:
-                                              120, // Kích thước chiều cao cố định
-                                          fit: BoxFit.cover,
-                                        ),
+                                    SizedBox(height: 10),
+                                    // Title with a maximum of 2 lines
+                                    Text(
+                                      _blogPosts[index]['title']!,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                      SizedBox(width: 10),
-                                      // Khoảng cách giữa ảnh và text
-                                      // Tiêu đề nằm bên phải
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Text(
-                                              _blogPosts[index]['title']!
-                                                          .length >
-                                                      50
-                                                  ? _blogPosts[index]['title']!
-                                                          .substring(0, 50) +
-                                                      '...'
-                                                  : _blogPosts[index]['title']!,
-                                              style: TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            Text(
-                                              _blogPosts[index]['category']!
-                                                          .length >
-                                                      50
-                                                  ? _blogPosts[index]
-                                                              ['category']!
-                                                          .substring(0, 50) +
-                                                      '...'
-                                                  : _blogPosts[index]
-                                                      ['category']!,
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                              ),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),

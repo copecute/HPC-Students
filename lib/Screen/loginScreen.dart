@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart'; // Import url_launcher
 import '../include/config.dart';
 import '../main.dart';
 import '../include/cookie_provider.dart';
@@ -19,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscureText = true;
+  final _formKey = GlobalKey<FormState>(); // Added form key
 
   @override
   void initState() {
@@ -147,160 +149,217 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  void _showForgotPasswordDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Quên mật khẩu?"),
+          content: Text(
+              "Bước 1: bạn hãy chuẩn bị thẻ sinh viên\nBước 2: bạn hãy lên phòng hành chính để xin cấp lại mật khẩu"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text("Đóng"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showRegisterConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Trở thành sinh viên HPC?"),
+          content: Text(
+              "Thủ tục đăng ký nhập học rất đơn giản bạn hãy tham gia ngay nào!"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text("Hủy"),
+            ),
+            TextButton(
+              onPressed: () async {
+                const url =
+                    'https://tuyensinh.bachkhoahanoi.edu.vn/'; // URL to launch
+                if (await canLaunch(url)) {
+                  await launch(url); // Launch the URL
+                } else {
+                  _showSnackBar('Không thể mở liên kết.');
+                }
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text("Đồng ý"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final themeProvider =
-        Provider.of<ThemeProvider>(context); // Get the theme provider
+    // Determine the current brightness of the system
+    final brightness = MediaQuery.of(context).platformBrightness;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Đăng Nhập'),
-        actions: [
-          PopupMenuButton<ThemeMode>(
-            icon: Icon(Icons.settings_brightness),
-            onSelected: (ThemeMode newValue) {
-              themeProvider.toggleTheme(newValue);
-            },
-            itemBuilder: (BuildContext context) => [
-              PopupMenuItem(
-                value: ThemeMode.light,
-                child: Text('Sáng'),
-              ),
-              PopupMenuItem(
-                value: ThemeMode.dark,
-                child: Text('Tối'),
-              ),
-              PopupMenuItem(
-                value: ThemeMode.system,
-                child: Text('Hệ thống'),
-              ),
-            ],
-          ),
-        ],
-      ),
-      backgroundColor: Theme.of(context)
-          .scaffoldBackgroundColor, // Use the theme's background color
-      body: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset(
-                'assets/icon.png',
-                height: 120,
-              ),
-              SizedBox(height: 20),
-              Text(
-                'Đăng Nhập',
-                style: TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context)
-                      .textTheme
-                      .displayLarge
-                      ?.color, // Use the theme's text color
-                ),
-              ),
-              SizedBox(height: 20),
-              TextField(
-                controller: _usernameController,
-                decoration: InputDecoration(
-                  labelText: 'Mã sinh viên',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+      backgroundColor: brightness == Brightness.dark
+          ? Colors.black // Set background to black for dark mode
+          : Colors.white, // Set background to white for light mode
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                children: [
+                  SizedBox(height: constraints.maxHeight * 0.1),
+                  Image.asset(
+                    "assets/icon.png", // Update with your new logo path
+                    height: 100,
                   ),
-                  filled: true,
-                  fillColor: Theme.of(context)
-                      .inputDecorationTheme
-                      .fillColor, // Use the theme's input field color
-                  labelStyle: TextStyle(
-                    color: Theme.of(context)
-                        .inputDecorationTheme
-                        .labelStyle
-                        ?.color, // Use the theme's label color
-                  ),
-                  contentPadding:
-                      EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
-                ),
-                style: TextStyle(
-                  color: Theme.of(context)
-                      .textTheme
-                      .bodyLarge
-                      ?.color, // Use the theme's body text color
-                ),
-              ),
-              SizedBox(height: 20),
-              TextField(
-                controller: _passwordController,
-                decoration: InputDecoration(
-                  labelText: 'Mật khẩu',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Theme.of(context)
-                      .inputDecorationTheme
-                      .fillColor, // Use the theme's input field color
-                  labelStyle: TextStyle(
-                    color: Theme.of(context)
-                        .inputDecorationTheme
-                        .labelStyle
-                        ?.color, // Use the theme's label color
-                  ),
-                  contentPadding:
-                      EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureText ? Icons.visibility : Icons.visibility_off,
-                      color: Theme.of(context)
-                          .iconTheme
-                          .color, // Use the theme's icon color
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscureText = !_obscureText;
-                      });
-                    },
-                  ),
-                ),
-                obscureText: _obscureText,
-                style: TextStyle(
-                  color: Theme.of(context)
-                      .textTheme
-                      .bodyLarge
-                      ?.color, // Use the theme's body text color
-                ),
-              ),
-              SizedBox(height: 30),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _login,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF2d59a4),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    elevation: 5,
-                  ),
-                  child: _isLoading
-                      ? CircularProgressIndicator(
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
-                        )
-                      : Text(
-                          'Đăng nhập',
-                          style: TextStyle(
-                            fontSize: 20,
-                            color: Colors.white,
+                  SizedBox(height: constraints.maxHeight * 0.1),
+                  Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          decoration: InputDecoration(
+                            hintText: 'Mã sinh viên', // Updated hint text
+                            filled: true,
+                            fillColor: brightness == Brightness.dark
+                                ? Colors.grey[800] // Dark input field color
+                                : const Color.fromARGB(255, 188, 187,
+                                    187), // Light input field color
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16.0 * 1.5, vertical: 16.0),
+                            border: OutlineInputBorder(
+                              borderSide: BorderSide.none,
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(50)),
+                            ),
+                          ),
+                          controller: _usernameController,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Vui lòng nhập mã sinh viên';
+                            }
+                            return null;
+                          },
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16.0),
+                          child: TextFormField(
+                            obscureText: true,
+                            decoration: InputDecoration(
+                              hintText: 'Mật khẩu',
+                              filled: true,
+                              fillColor: brightness == Brightness.dark
+                                  ? Colors.grey[800] // Dark input field color
+                                  : const Color.fromARGB(255, 188, 187,
+                                      187), // Light input field color
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16.0 * 1.5, vertical: 16.0),
+                              border: OutlineInputBorder(
+                                borderSide: BorderSide.none,
+                                borderRadius:
+                                    BorderRadius.all(Radius.circular(50)),
+                              ),
+                            ),
+                            controller: _passwordController,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Vui lòng nhập mật khẩu';
+                              }
+                              return null;
+                            },
                           ),
                         ),
-                ),
+                        ElevatedButton(
+                          onPressed: _isLoading // Disable button when loading
+                              ? null
+                              : () {
+                                  if (_formKey.currentState!.validate()) {
+                                    _login(); // Call the existing login method
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            elevation: 0,
+                            backgroundColor: const Color(0xFF2d59a4),
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 48),
+                            shape: const StadiumBorder(),
+                          ),
+                          child:
+                              _isLoading // Show loading indicator when logging in
+                                  ? SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                Colors.white),
+                                      ),
+                                    )
+                                  : const Text(
+                                      "Đăng nhập"), // Updated button text
+                        ),
+                        const SizedBox(height: 16.0),
+                        TextButton(
+                          onPressed: _showForgotPasswordDialog, // Show modal
+                          child: Text(
+                            'Quên mật khẩu?',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium!
+                                .copyWith(
+                                  color: brightness == Brightness.dark
+                                      ? Colors
+                                          .white70 // Light text for dark theme
+                                      : Colors
+                                          .black54, // Dark text for light theme
+                                ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed:
+                              _showRegisterConfirmationDialog, // Show confirmation dialog
+                          child: Text.rich(
+                            TextSpan(
+                              text: "Bạn không có tài khoản? ",
+                              children: [
+                                TextSpan(
+                                  text: "Đăng ký",
+                                  style: TextStyle(color: Color(0xFF00BF6D)),
+                                ),
+                              ],
+                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium!
+                                .copyWith(
+                                  color: brightness == Brightness.dark
+                                      ? Colors
+                                          .white70 // Light text for dark theme
+                                      : Colors
+                                          .black54, // Dark text for light theme
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

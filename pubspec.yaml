@@ -28,6 +28,8 @@ dependencies:
   firebase_database: ^11.1.4
   cloud_firestore: ^5.4.3
   audioplayers: ^6.1.0
+  fl_chart: ^0.69.0
+  flutter_svg: ^2.0.10+1
 
 
 dev_dependencies:

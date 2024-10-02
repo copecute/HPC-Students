@@ -52,13 +52,15 @@ class ProfileCard extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 16),
-              Text(
-                'Họ và Tên: $hoTen',
+        Center(
+          child: Text(
+                '$hoTen',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
+        ),
               SizedBox(height: 8),
               Text('Điện thoại: $dienThoai'),
               SizedBox(height: 8),

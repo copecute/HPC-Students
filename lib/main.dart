@@ -16,6 +16,7 @@ import 'package:hpc_students/Screen/Blog/blogScreen.dart';
 import 'package:hpc_students/Screen/HomeScreen.dart';
 import 'package:hpc_students/Screen/menu/menuScreen.dart';
 import 'include/theme_provider.dart'; // Import ThemeProvider
+import 'package:hpc_students/Screen/WelcomeScreen.dart'; // Import the WelcomeScreen
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Ensure binding is initialized
@@ -49,9 +50,7 @@ class MyApp extends StatelessWidget {
         future: _checkLoginStatus(), // Hàm kiểm tra trạng thái đăng nhập
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Scaffold(
-                body: Center(
-                    child: CircularProgressIndicator())); // Hiển thị loading
+            return WelcomeScreen(); // Show the splash screen while loading
           } else {
             return LoginScreen(); // Mặc định là màn hình đăng nhập
           }
