@@ -30,6 +30,7 @@ dependencies:
   audioplayers: ^6.1.0
   fl_chart: ^0.69.0
   flutter_svg: ^2.0.10+1
+  connectivity_plus: ^6.0.3
 
 
 dev_dependencies:
@@ -50,3 +51,4 @@ flutter:
     - assets/icon.png
     - assets/avatar.png
     - assets/audio/notification.mp3
+    - assets/LichHoc/style.css

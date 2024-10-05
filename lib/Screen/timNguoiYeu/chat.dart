@@ -336,7 +336,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Tìm cỏ non'),
+        title: Text('Tìm người yêu'),
         actions: [
           if (isChatActive)
             IconButton(

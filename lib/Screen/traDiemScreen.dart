@@ -6,6 +6,8 @@ import 'package:hpc_students/include/config.dart';
 import 'package:hpc_students/include/cookie_provider.dart';
 import 'package:hpc_students/Screen/loginScreen.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class TraDiemScreen extends StatefulWidget {
   @override
@@ -28,6 +30,28 @@ class _TraDiemScreenState extends State<TraDiemScreen> {
       isLoading = true;
     });
 
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? cachedScores = prefs.getString('cachedScoresData');
+    String? cachedFilteredScores = prefs.getString('cachedFilteredScoresData');
+
+    if (cachedScores != null && cachedFilteredScores != null) {
+      // Decode and use cached data if available
+      List<dynamic> jsonDataScores = jsonDecode(cachedScores);
+      List<dynamic> jsonDataFilteredScores = jsonDecode(cachedFilteredScores);
+      scores = List<Map<String, String>>.from(
+          jsonDataScores.map((item) => Map<String, String>.from(item)));
+      filteredScores = List<Map<String, String>>.from(
+          jsonDataFilteredScores.map((item) => Map<String, String>.from(item)));
+      setState(() {
+        isLoading = false;
+      });
+    } else {
+      // Fetch new data if no cache is available
+      await fetchScoresFromServer();
+    }
+  }
+
+  Future<void> fetchScoresFromServer() async {
     String? cookie =
         Provider.of<CookieProvider>(context, listen: false).getCookie();
     if (cookie == null || cookie.isEmpty) {
@@ -49,8 +73,7 @@ class _TraDiemScreenState extends State<TraDiemScreen> {
 
     if (responseIndex.statusCode == 200) {
       // Bước 2: Gửi yêu cầu lấy thông tin điểm
-      final urlScore = Uri.parse(
-          "https://sinhvien.bachkhoahanoi.edu.vn/TraCuuDiem/ThongTinDiemSinhVien");
+      final urlScore = Uri.parse("$baseUrl/TraCuuDiem/ThongTinDiemSinhVien");
       final responseScore = await http.post(urlScore, headers: {
         'Cookie': cookie,
       });
@@ -81,6 +104,11 @@ class _TraDiemScreenState extends State<TraDiemScreen> {
       });
     }
 
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+        'cachedScoresData', jsonEncode(scores)); // Cache the scores
+    await prefs.setString('cachedFilteredScoresData',
+        jsonEncode(filteredScores)); // Cache the filtered scores
     setState(() {
       isLoading = false;
     });
@@ -214,7 +242,7 @@ class _TraDiemScreenState extends State<TraDiemScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Tra cứu điểm'),
+        title: Text('Kết quả học tập'),
         actions: [
           IconButton(
             icon: Icon(Icons.search),
@@ -238,97 +266,104 @@ class _TraDiemScreenState extends State<TraDiemScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: isLoading
-            ? Center(child: CircularProgressIndicator())
-            : Column(
-                children: [
-                  Text(
-                    'Biểu đồ phân bố điểm',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 10),
-                  GestureDetector(
-                    onTap: () {
-                      // Handle tap on the chart
-                    },
-                    child: Container(
-                      height: 300,
-                      child: BarChart(
-                        BarChartData(
-                          titlesData: FlTitlesData(
-                            leftTitles: AxisTitles(
-                              sideTitles: SideTitles(showTitles: true),
-                            ),
-                            bottomTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                getTitlesWidget: (value, meta) {
-                                  int index = value.toInt();
-                                  if (index >= 0 &&
-                                      index <
-                                          getGradeDistribution().keys.length) {
-                                    return Text(getGradeDistribution()
-                                        .keys
-                                        .toList()[index]);
-                                  }
-                                  return Text('');
-                                },
+      body: RefreshIndicator(
+        onRefresh: fetchScores,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: isLoading
+              ? Center(child: CircularProgressIndicator())
+              : Column(
+                  children: [
+                    Text(
+                      'Biểu đồ phân bố điểm',
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 10),
+                    GestureDetector(
+                      onTap: () {
+                        // Handle tap on the chart
+                      },
+                      child: Container(
+                        height: 300,
+                        child: BarChart(
+                          BarChartData(
+                            titlesData: FlTitlesData(
+                              leftTitles: AxisTitles(
+                                sideTitles: SideTitles(showTitles: true),
+                              ),
+                              bottomTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  getTitlesWidget: (value, meta) {
+                                    int index = value.toInt();
+                                    if (index >= 0 &&
+                                        index <
+                                            getGradeDistribution()
+                                                .keys
+                                                .length) {
+                                      return Text(getGradeDistribution()
+                                          .keys
+                                          .toList()[index]);
+                                    }
+                                    return Text('');
+                                  },
+                                ),
                               ),
                             ),
-                          ),
-                          borderData: FlBorderData(show: true),
-                          barGroups: showingBarGroups(),
-                          gridData: FlGridData(show: false),
-                          maxY:
-                              getMaxBarHeight(), // Set maxY to the highest bar count
-                          barTouchData: BarTouchData(
-                            touchCallback: (event, response) {
-                              if (event is! FlTapUpEvent) return;
-                              if (response == null || response.spot == null)
-                                return;
+                            borderData: FlBorderData(show: true),
+                            barGroups: showingBarGroups(),
+                            gridData: FlGridData(show: false),
+                            maxY:
+                                getMaxBarHeight(), // Set maxY to the highest bar count
+                            barTouchData: BarTouchData(
+                              touchCallback: (event, response) {
+                                if (event is! FlTapUpEvent) return;
+                                if (response == null || response.spot == null)
+                                  return;
 
-                              final index = response.spot!.touchedBarGroupIndex;
-                              final grade =
-                                  getGradeDistribution().keys.toList()[index];
-                              showSubjectsForGrade(grade);
-                            },
+                                final index =
+                                    response.spot!.touchedBarGroupIndex;
+                                final grade =
+                                    getGradeDistribution().keys.toList()[index];
+                                showSubjectsForGrade(grade);
+                              },
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  SizedBox(height: 20),
-                  // List of subjects
-                  ListView.builder(
-                    itemCount: filteredScores.length,
-                    shrinkWrap:
-                        true, // Prevent ListView from taking infinite height
-                    physics:
-                        NeverScrollableScrollPhysics(), // Disable scrolling
-                    itemBuilder: (context, index) {
-                      final score = filteredScores[index];
-                      return Card(
-                        margin: EdgeInsets.symmetric(vertical: 8.0),
-                        child: ListTile(
-                          title: Text('${score['tenMon']} (${score['maMon']})'),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Điểm thành phần: ${score['diemTP']}'),
-                              Text('Điểm thi: ${score['diemThi']}'),
-                              Text('TBCHP: ${score['tbchp']}'),
-
-                            ],
+                    SizedBox(height: 20),
+                    // List of subjects
+                    ListView.builder(
+                      itemCount: filteredScores.length,
+                      shrinkWrap:
+                          true, // Prevent ListView from taking infinite height
+                      physics:
+                          NeverScrollableScrollPhysics(), // Disable scrolling
+                      itemBuilder: (context, index) {
+                        final score = filteredScores[index];
+                        return Card(
+                          margin: EdgeInsets.symmetric(vertical: 8.0),
+                          child: ListTile(
+                            title:
+                                Text('${score['tenMon']} (${score['maMon']})'),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Điểm thành phần: ${score['diemTP']}'),
+                                Text('Điểm thi: ${score['diemThi']}'),
+                                Text('TBCHP: ${score['tbchp']}'),
+                              ],
+                            ),
+                            trailing: Text('Số tín chỉ: ${score['soTinChi']}'),
                           ),
-                          trailing: Text('Số tín chỉ: ${score['soTinChi']}'),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+        ),
       ),
     );
   }

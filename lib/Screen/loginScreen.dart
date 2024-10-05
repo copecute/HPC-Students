@@ -6,7 +6,9 @@ import '../main.dart';
 import '../include/cookie_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../include/theme_provider.dart'; // Import ThemeProvider
+// Import ThemeProvider
+
+import 'dart:io'; // Import dart:io for handling SocketException
 
 enum LoginStatus { success, failure, redirect }
 
@@ -108,39 +110,47 @@ class _LoginScreenState extends State<LoginScreen> {
       'Password': password,
     };
 
-    var response = await http.post(
-      Uri.parse(url),
-      body: postData,
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    );
+    try {
+      var response = await http.post(
+        Uri.parse(url),
+        body: postData,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      );
 
-    String? cookie = response.headers['set-cookie'];
-    if (cookie != null) {
-      Provider.of<CookieProvider>(context, listen: false).setCookie(cookie);
-    }
-
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setString('cookie', cookie ?? '');
-
-    if (response.statusCode == 200) {
-      if (response.body.contains('message=')) {
-        var decodedResponse = Uri.parse(response.body);
-        var queryParams = decodedResponse.queryParameters;
-        var message = queryParams['message'];
-        _showSnackBar(message ?? 'Đăng nhập thành công!');
-        return LoginStatus.success;
-      } else {
-        return LoginStatus.success;
+      String? cookie = response.headers['set-cookie'];
+      if (cookie != null) {
+        Provider.of<CookieProvider>(context, listen: false).setCookie(cookie);
       }
-    } else if (response.statusCode == 302) {
-      var redirectUrl = response.headers['location'];
-      if (redirectUrl != null && redirectUrl.contains('/SinhVien')) {
-        return LoginStatus.redirect;
+
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      prefs.setString('cookie', cookie ?? '');
+
+      if (response.statusCode == 200) {
+        if (response.body.contains('message=')) {
+          var decodedResponse = Uri.parse(response.body);
+          var queryParams = decodedResponse.queryParameters;
+          var message = queryParams['message'];
+          _showSnackBar(message ?? 'Đăng nhập thành công!');
+          return LoginStatus.success;
+        } else {
+          return LoginStatus.success;
+        }
+      } else if (response.statusCode == 302) {
+        var redirectUrl = response.headers['location'];
+        if (redirectUrl != null && redirectUrl.contains('/SinhVien')) {
+          return LoginStatus.redirect;
+        }
       }
+      return LoginStatus.failure;
+    } on SocketException catch (e) {
+      _showSnackBar('Không có kết nối internet. Vui lòng kiểm tra lại.');
+      return LoginStatus.failure;
+    } catch (e) {
+      _showSnackBar('Đã xảy ra lỗi khi đăng nhập. Vui lòng thử lại.');
+      return LoginStatus.failure;
     }
-    return LoginStatus.failure;
   }
 
   void _showSnackBar(String message) {
@@ -211,7 +221,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return Scaffold(
       backgroundColor: brightness == Brightness.dark
-          ? Colors.black // Set background to black for dark mode
+          ? Color(0xFF282a36) // Set background to black for dark mode
           : Colors.white, // Set background to white for light mode
       body: SafeArea(
         child: LayoutBuilder(
@@ -257,7 +267,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 16.0),
                           child: TextFormField(
-                            obscureText: true,
+                            obscureText: _obscureText,
                             decoration: InputDecoration(
                               hintText: 'Mật khẩu',
                               filled: true,
@@ -271,6 +281,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                 borderSide: BorderSide.none,
                                 borderRadius:
                                     BorderRadius.all(Radius.circular(50)),
+                              ),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscureText
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscureText = !_obscureText;
+                                  });
+                                },
                               ),
                             ),
                             controller: _passwordController,

@@ -20,7 +20,6 @@ import 'loginScreen.dart';
 import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Thư viện SharedPreferences
-import 'package:fl_chart/fl_chart.dart';
 
 import 'menu/navigation_service.dart'; // Import the fl_chart package
 
@@ -126,11 +125,20 @@ class _HomeScreenState extends State<HomeScreen> {
           _cacheData();
         });
       } else {
+        _showSnackBar('Không có kết nối internet. Vui lòng kiểm tra lại.');
+        print('Failed to fetch data. Status code: ${response.statusCode}');
         setState(() {
           _isLoading = false;
         });
       }
+    } on SocketException catch (_) {
+      _showSnackBar('Không có kết nối internet. Vui lòng kiểm tra lại.');
+      setState(() {
+        _isLoading = false;
+      });
     } catch (e) {
+      _showSnackBar('Không có kết nối internet. Vui lòng kiểm tra lại.');
+      print('An error occurred while fetching data: $e');
       setState(() {
         _isLoading = false;
       });
@@ -210,12 +218,14 @@ class _HomeScreenState extends State<HomeScreen> {
           _isLoading = false; // Reset loading state
         });
       } else {
+        _showSnackBar('Không có kết nối internet. Vui lòng kiểm tra lại.');
         print('Error: ${response.statusCode}');
         setState(() {
           _isLoading = false; // Reset loading state on error
         });
       }
     } catch (e) {
+      _showSnackBar('Không có kết nối internet. Vui lòng kiểm tra lại.');
       print('Error fetching blog posts: $e');
       setState(() {
         _isLoading = false; // Reset loading state on exception
@@ -333,8 +343,7 @@ class _HomeScreenState extends State<HomeScreen> {
             case 'HPC Ranking':
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                    builder: (context) => RankScreen()),
+                MaterialPageRoute(builder: (context) => RankScreen()),
               );
               break;
             case 'Vé ra vào':
@@ -358,7 +367,8 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 30, color: Color(0xFF2d59a4)), // Reduced icon size
+              Icon(icon,
+                  size: 30, color: Color(0xFF2d59a4)), // Reduced icon size
               SizedBox(height: 6), // Reduced space between icon and text
               Text(
                 title,
@@ -374,10 +384,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider =
-    Provider.of<ThemeProvider>(context); // Get the theme provider
+        Provider.of<ThemeProvider>(context); // Get the theme provider
 
     return Scaffold(
       appBar: AppBar(
@@ -542,98 +558,113 @@ class _HomeScreenState extends State<HomeScreen> {
                     // Danh sách tin tức theo chiều ngang
                     Container(
                       height: 150, // Chiều cao cố định cho phần tin tức
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _blogPosts.length,
-                        itemBuilder: (context, index) {
-                          return Container(
-                            width: 350, // Chiều rộng cố định cho mỗi Card
-                            margin: EdgeInsets.symmetric(horizontal: 8),
-                            child: Card(
-                              elevation: 4,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: InkWell(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => BlogDetailScreen(
-                                        postUrl: _blogPosts[index]['self']!,
-                                      ),
+                      child: _isLoading
+                          ? Center(
+                              child:
+                                  CircularProgressIndicator()) // Hiển thị loading khi dữ liệu đang được tải
+                          : ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: _blogPosts.length,
+                              itemBuilder: (context, index) {
+                                return Container(
+                                  width: 350, // Chiều rộng cố định cho mỗi Card
+                                  margin: EdgeInsets.symmetric(horizontal: 8),
+                                  child: Card(
+                                    elevation: 4,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
-                                  );
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Row(
-                                    children: [
-                                      // Ảnh nằm bên trái
-                                      ClipRRect(
-                                        borderRadius:
-                                            BorderRadius.circular(8.0),
-                                        child: Image.network(
-                                          _blogPosts[index]['image'] ?? '',
-                                          width:
-                                              120, // Kích thước chiều rộng cố định
-                                          height:
-                                              120, // Kích thước chiều cao cố định
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                      SizedBox(width: 10),
-                                      // Khoảng cách giữa ảnh và text
-                                      // Tiêu đề nằm bên phải
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Text(
-                                              _blogPosts[index]['title']!
-                                                          .length >
-                                                      50
-                                                  ? _blogPosts[index]['title']!
-                                                          .substring(0, 50) +
-                                                      '...'
-                                                  : _blogPosts[index]['title']!,
-                                              style: TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
+                                    child: InkWell(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                BlogDetailScreen(
+                                              postUrl: _blogPosts[index]
+                                                  ['self']!,
                                             ),
-                                            Text(
-                                              _blogPosts[index]['category']!
-                                                          .length >
-                                                      50
-                                                  ? _blogPosts[index]
-                                                              ['category']!
-                                                          .substring(0, 50) +
-                                                      '...'
-                                                  : _blogPosts[index]
-                                                      ['category']!,
-                                              style: TextStyle(
-                                                fontSize: 16,
+                                          ),
+                                        );
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Row(
+                                          children: [
+                                            // Ảnh nằm bên trái
+                                            ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(8.0),
+                                              child: Image.network(
+                                                _blogPosts[index]['image'] ??
+                                                    '',
+                                                width:
+                                                    120, // Kích thước chiều rộng cố định
+                                                height:
+                                                    120, // Kích thước chiều cao cố định
+                                                fit: BoxFit.cover,
                                               ),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            SizedBox(width: 10),
+                                            // Khoảng cách giữa ảnh và text
+                                            // Tiêu đề nằm bên phải
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Text(
+                                                    _blogPosts[index]['title']!
+                                                                .length >
+                                                            50
+                                                        ? _blogPosts[index]
+                                                                    ['title']!
+                                                                .substring(
+                                                                    0, 50) +
+                                                            '...'
+                                                        : _blogPosts[index]
+                                                            ['title']!,
+                                                    style: TextStyle(
+                                                      fontSize: 18,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                    maxLines: 2,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                  Text(
+                                                    _blogPosts[index][
+                                                                    'category']!
+                                                                .length >
+                                                            50
+                                                        ? _blogPosts[index][
+                                                                    'category']!
+                                                                .substring(
+                                                                    0, 50) +
+                                                            '...'
+                                                        : _blogPosts[index]
+                                                            ['category']!,
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                    ),
+                                                    maxLines: 2,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ],
+                                              ),
                                             ),
                                           ],
                                         ),
                                       ),
-                                    ],
+                                    ),
                                   ),
-                                ),
-                              ),
+                                );
+                              },
                             ),
-                          );
-                        },
-                      ),
                     ),
                   ],
                 ),
