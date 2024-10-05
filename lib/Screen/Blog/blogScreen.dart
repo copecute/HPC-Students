@@ -22,7 +22,8 @@ class _BlogScreenState extends State<BlogScreen> {
   int _totalPages = 0;
   List<String> _categories = [];
   String? _selectedCategory; // Variable to store the selected category
-  String _defaultImage = 'https://blogger.googleusercontent.com/img/a/AVvXsEiYorgTwvKTp7bjT_1O6HrAl2K4vYEcimlyzfv-0UNwF8x_ov7avCHuZoVdg6K-u2GhL7bOUOmL9DSC4YiBQOF82bmOxYFhmzcd_S15-AikwfL83vmYIAPuBtCPGeRsRfAiVw0REdGk-GZltwNDSWuKC-WFGvU1WwUCASD8CynnsGpOH91geRjUW2rVmC0=w220-h146-p-k-no-nu'; // Default image path
+  String _defaultImage =
+      'https://blogger.googleusercontent.com/img/a/AVvXsEiYorgTwvKTp7bjT_1O6HrAl2K4vYEcimlyzfv-0UNwF8x_ov7avCHuZoVdg6K-u2GhL7bOUOmL9DSC4YiBQOF82bmOxYFhmzcd_S15-AikwfL83vmYIAPuBtCPGeRsRfAiVw0REdGk-GZltwNDSWuKC-WFGvU1WwUCASD8CynnsGpOH91geRjUW2rVmC0=w220-h146-p-k-no-nu'; // Default image path
 
   @override
   void initState() {
@@ -122,6 +123,13 @@ class _BlogScreenState extends State<BlogScreen> {
           _filteredPosts = _posts;
           _totalPages = (_totalPosts / _postsPerPage).ceil();
 
+          // Debugging: Print the number of posts and their titles
+          print('Total Posts: $_totalPosts');
+          for (var entry in entries) {
+            final title = entry.findElements('title').single.text;
+            print('Post Title: $title');
+          }
+
           // Cache the data
           SharedPreferences prefs = await SharedPreferences.getInstance();
           await prefs.setString(
@@ -136,6 +144,7 @@ class _BlogScreenState extends State<BlogScreen> {
       setState(() {
         _isLoading = false;
       });
+      print('Error fetching blog posts: $e');
     }
   }
 

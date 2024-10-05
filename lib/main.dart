@@ -1,15 +1,16 @@
 import 'dart:io';
+import 'dart:async'; // Import Timer
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:hpc_students/Screen/traCuuHocPhiScreen.dart';
 import 'package:hpc_students/Screen/traCuuLichHocScreen.dart';
 import 'package:hpc_students/Screen/TraCuuDiemRenLuyenScreen.dart';
+import 'package:hpc_students/Screen/traDiemScreen.dart';
 import 'Screen/profile.dart';
 import 'include/config.dart'; // File config chứa baseUrl
 import 'package:provider/provider.dart';
 import 'include/cookie_provider.dart'; // Import CookieProvider
-import 'package:hpc_students/Screen/loginScreen.dart'; // Đường dẫn đến màn hình đăng nhập
-import 'package:hpc_students/Screen/TraCuuDiemRenLuyenScreen.dart';
+import 'package:hpc_students/Screen/loginScreen.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart'; // Thư viện SharedPreferences
 import 'package:hpc_students/Screen/Blog/blogScreen.dart';
@@ -37,35 +38,70 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
+  final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     return MaterialApp(
+      scaffoldMessengerKey:
+          _scaffoldMessengerKey, // Set the key for ScaffoldMessenger
       title: 'HPC Students',
       theme: themeProvider.lightTheme, // Light theme
       darkTheme: themeProvider.darkTheme, // Dark theme
       themeMode: themeProvider.themeMode, // Set the theme mode
       home: FutureBuilder(
-        future: _checkLoginStatus(), // Hàm kiểm tra trạng thái đăng nhập
+        future:
+            _mockCheckLoginStatus(), // Use a mock future that delays the check
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Scaffold(
-                body: Center(
-                    child: CircularProgressIndicator())); // Hiển thị loading
-          } else {
-            return LoginScreen(); // Mặc định là màn hình đăng nhập
-          }
+          // Directly return LoginScreen after the future completes
+          return LoginScreen(); // Default to the login screen after delay
         },
       ),
     );
+  }
+
+  void _showSnackBar(String message) {
+    _scaffoldMessengerKey.currentState?.showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  // Mock function to simulate delay
+  Future<bool> _mockCheckLoginStatus() async {
+    await Future.delayed(Duration(seconds: 5)); // Simulate a delay
+    return _checkLoginStatus(); // Then proceed to check login status
   }
 
   Future<bool> _checkLoginStatus() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? username = prefs.getString('username');
     String? password = prefs.getString('password');
-    // Kiểm tra nếu cả tên đăng nhập và mật khẩu đều tồn tại
-    return username != null && password != null;
+
+    if (username != null && password != null) {
+      try {
+        // Attempt to simulate a network request or check
+        return await simulateNetworkRequest(username, password);
+      } on SocketException catch (_) {
+        // Handle no internet connection
+        _showSnackBar('Không có kết nối internet. Vui lòng kiểm tra lại.');
+        print('No internet connection available.');
+        return false;
+      } catch (e) {
+        // Handle other exceptions
+        print('An error occurred: $e');
+        return false;
+      }
+    }
+    return false;
+  }
+
+  // Simulated network request for demonstration
+  Future<bool> simulateNetworkRequest(String username, String password) async {
+    // This is a placeholder for actual network interaction
+    await Future.delayed(Duration(seconds: 1)); // Simulate network latency
+    return true; // Simulate successful network response
   }
 }
 
@@ -80,8 +116,9 @@ class _MainScreenState extends State<MainScreen> {
   // Danh sách các màn hình
   final List<Widget> _screens = [
     HomeScreen(), // Màn hình trang chủ
+    //LichHocScreen(),
     TraCuuLichHocScreen(), // Màn hình lịch học
-    TraCuuDiemRenLuyenScreen(), // Màn hình điểm rèn luyện
+    TraDiemScreen(), // Màn hình điểm rèn luyện
     TraCuuHocPhiScreen(), // Màn hình học phí
     MenuScreen(), // Màn hình menu
   ];
@@ -107,8 +144,8 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Lịch học',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.grade), // Biểu tượng điểm rèn luyện
-            label: 'Điểm rèn luyện',
+            icon: Icon(Icons.add_chart), // Biểu tượng điểm rèn luyện
+            label: 'Kết quả học tập',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.monetization_on), // Biểu tượng học phí

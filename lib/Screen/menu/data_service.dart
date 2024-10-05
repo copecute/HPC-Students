@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hpc_students/include/cookie_provider.dart';
 import 'package:hpc_students/Screen/loginScreen.dart';
 import 'avatar_service.dart' as avatarService; // Import with alias
+import 'package:hpc_students/Screen/menu/avatar_service.dart'; // Import avatar service
 
 Future<void> loadData(
     BuildContext context,
@@ -79,7 +80,7 @@ Future<void> loadData(
         String cmnd =
             document.getElementById("CMND")?.attributes['value'] ?? '';
 
-        // Set the data using the callbacks
+        // Ensure you are setting all the necessary data
         setHoTen(hoTen);
         setDienThoai(dienThoai);
         setNgaySinh(ngaySinh);

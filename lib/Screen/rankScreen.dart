@@ -171,58 +171,6 @@ class _RankScreenState extends State<RankScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Bảng xếp hạng'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.search),
-            onPressed: () {
-              // Open the drawer when the search icon is pressed
-              Scaffold.of(context).openEndDrawer();
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.menu),
-            onPressed: () {
-              // Open the drawer when the menu icon is pressed
-              Scaffold.of(context).openEndDrawer();
-            },
-          ),
-        ],
-      ),
-      endDrawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              child: Text(
-                'Chọn chuyên mục',
-                style: TextStyle(color: Colors.white, fontSize: 24),
-              ),
-              decoration: BoxDecoration(
-                color: Colors.blue,
-              ),
-            ),
-            // Add your dropdown or other widgets here
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: DropdownButton<String>(
-                value: _selectedCategory ?? 'All',
-                items: _categories
-                    .map((category) => DropdownMenuItem<String>(
-                          value: category,
-                          child: Text(category),
-                        ))
-                    .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedCategory = value;
-                    // Optionally, you can filter the rankings based on the selected category
-                    // _fetchRankings(category: value);
-                  });
-                },
-              ),
-            ),
-          ],
-        ),
       ),
       body: RefreshIndicator(
         onRefresh: refreshData, // Call refreshData when pulled down

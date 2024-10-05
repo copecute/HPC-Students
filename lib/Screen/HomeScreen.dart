@@ -1,4 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:hpc_students/Screen/TraCuuDiemRenLuyenScreen.dart';
+import 'package:hpc_students/Screen/menu/menuScreen.dart';
+import 'package:hpc_students/Screen/rankScreen.dart';
+import 'package:hpc_students/Screen/timNguoiYeu/chat.dart';
+import 'package:hpc_students/Screen/traCuuHocPhiScreen.dart';
+import 'package:hpc_students/Screen/traCuuLichHocScreen.dart';
+import 'package:hpc_students/Screen/traDiemScreen.dart';
+import 'package:hpc_students/include/theme_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:http/io_client.dart';
 import 'dart:io';
@@ -7,11 +15,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../include/cookie_provider.dart';
 import '../include/config.dart';
 import 'Blog/blogDetailScreen.dart';
+import 'Blog/blogScreen.dart'; // Import BlogScreen
 import 'loginScreen.dart';
-import 'package:hpc_students/Screen/Blog/blogScreen.dart';
 import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Thư viện SharedPreferences
+
+import 'menu/navigation_service.dart'; // Import the fl_chart package
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -23,16 +33,20 @@ class _HomeScreenState extends State<HomeScreen> {
   String _trangThai = '';
   String _maSinhVien = '';
   String _tinChiTichLuy = '';
-  String _tbcTichLuy = '';
+  String _tbcTichLuy = '0';
   String _xepLoaiHT = '';
   bool _isLoading = true;
   List<Map<String, String>> _blogPosts = [];
+  double _tbcTichLuyValue = 0.0; // Variable to hold the TBC value
+  double _maxTbcValue = 10.0; // Maximum TBC value for comparison
+  String _defaultImage =
+      'https://blogger.googleusercontent.com/img/a/AVvXsEiYorgTwvKTp7bjT_1O6HrAl2K4vYEcimlyzfv-0UNwF8x_ov7avCHuZoVdg6K-u2GhL7bOUOmL9DSC4YiBQOF82bmOxYFhmzcd_S15-AikwfL83vmYIAPuBtCPGeRsRfAiVw0REdGk-GZltwNDSWuKC-WFGvU1WwUCASD8CynnsGpOH91geRjUW2rVmC0=w220-h146-p-k-no-nu'; // Default image URL
 
   @override
   void initState() {
     super.initState();
     _loadCachedData(); // Load dữ liệu từ cache
-    _fetchBlogPosts(); // Lấy tin tức từ Blogger
+    _fetchBlogPosts(); // Fetch blog posts on initialization
   }
 
   // Load dữ liệu từ SharedPreferences
@@ -42,11 +56,15 @@ class _HomeScreenState extends State<HomeScreen> {
       _hoTen = prefs.getString('hoTen') ?? '';
       _trangThai = prefs.getString('trangThai') ?? '';
       _maSinhVien = prefs.getString('maSinhVien') ?? '';
-      _tinChiTichLuy = prefs.getString('tinChiTichLuy') ?? '';
-      _tbcTichLuy = prefs.getString('tbcTichLuy') ?? '';
+      _tinChiTichLuy = prefs.getString('tinChiTichLuy') ?? '0';
+      _tbcTichLuy = prefs.getString('tbcTichLuy') ?? '0';
       _xepLoaiHT = prefs.getString('xepLoaiHT') ?? '';
       _isLoading =
           _hoTen.isEmpty; // Nếu không có dữ liệu thì sẽ hiển thị loading
+
+      // Parse TBC value
+      _tbcTichLuyValue =
+          double.tryParse(_tbcTichLuy) ?? 0.0; // Parse TBC tích lũy
     });
 
     if (_hoTen.isEmpty) {
@@ -84,11 +102,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (response.statusCode == 200) {
         var document = htmlParser.parse(response.body);
-
         setState(() {
           _maSinhVien = document.getElementById("MaSinhVien")?.text.trim() ??
               'Không tìm thấy mã sinh viên';
-
           var hoTenVaTrangThai = document
               .querySelector("a.dropdown .styMenu")
               ?.innerHtml
@@ -97,7 +113,6 @@ class _HomeScreenState extends State<HomeScreen> {
           _hoTen = hoTenVaTrangThai?[0].trim() ?? 'Không tìm thấy tên';
           _trangThai =
               hoTenVaTrangThai?[1].trim() ?? 'Không tìm thấy trạng thái';
-
           _tinChiTichLuy =
               document.getElementById("TinChiTichLuy")?.text.trim() ??
                   'Không tìm thấy tín chỉ';
@@ -105,26 +120,116 @@ class _HomeScreenState extends State<HomeScreen> {
               'Không tìm thấy TBC tích luỹ';
           _xepLoaiHT = document.getElementById("XepLoaiHTH10")?.text.trim() ??
               'Không tìm thấy xếp loại học tập';
-
           _isLoading = false;
-
-          // Lưu hoặc cập nhật thông tin lên Firestore
           _saveOrUpdateToFirestore();
-
-          // Lưu dữ liệu vào SharedPreferences
           _cacheData();
         });
       } else {
+        _showSnackBar('Không có kết nối internet. Vui lòng kiểm tra lại.');
+        print('Failed to fetch data. Status code: ${response.statusCode}');
         setState(() {
           _isLoading = false;
         });
       }
+    } on SocketException catch (_) {
+      _showSnackBar('Không có kết nối internet. Vui lòng kiểm tra lại.');
+      setState(() {
+        _isLoading = false;
+      });
     } catch (e) {
+      _showSnackBar('Không có kết nối internet. Vui lòng kiểm tra lại.');
+      print('An error occurred while fetching data: $e');
       setState(() {
         _isLoading = false;
       });
     } finally {
       ioClient.close();
+    }
+  }
+
+  String? _getThumbnail(XmlElement post) {
+    final mediaThumbnails = post.findElements('media:thumbnail');
+    if (mediaThumbnails.isNotEmpty) {
+      return mediaThumbnails.first.getAttribute('url');
+    }
+    final content = post.findElements('content').first.text;
+    final regExp = RegExp(r'<img.*?src="(.*?)"', caseSensitive: false);
+    final match = regExp.firstMatch(content);
+    if (match != null) {
+      return match.group(1);
+    }
+    return _defaultImage; // Return default image if no thumbnail is found
+  }
+
+  // Fetch blog posts similar to BlogScreen.dart
+  Future<void> _fetchBlogPosts() async {
+    setState(() {
+      _isLoading = true; // Set loading state
+    });
+
+    String url =
+        'https://www.blogger.com/feeds/$blogID/posts/default?max-results=5';
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final document = XmlDocument.parse(response.body);
+        final entries = document.findAllElements('entry');
+
+        List<Map<String, String>> tempPosts = [];
+        for (var entry in entries) {
+          final title = entry.findElements('title').single.text;
+          final published = entry.findElements('published').single.text;
+          final category = entry
+              .findElements('category')
+              .firstWhere(
+                (link) =>
+                    link.getAttribute('scheme') ==
+                    'http://www.blogger.com/atom/ns#',
+                orElse: () => XmlElement(XmlName('category')),
+              )
+              .getAttribute('term'); // Get the category
+
+          final selfLink = entry
+              .findElements('link')
+              .firstWhere(
+                (link) => link.getAttribute('rel') == 'self',
+                orElse: () => XmlElement(XmlName('link')),
+              )
+              .getAttribute('href'); // Get the selfLink
+
+          // Use the new _getThumbnail method to extract the image URL
+          final imageUrl = _getThumbnail(entry);
+
+          // Ensure selfLink is not null before adding it to the post data
+          if (selfLink != null) {
+            tempPosts.add({
+              'title': title,
+              'published': published,
+              'category': category ?? "Mới",
+              'self': selfLink, // Add selfLink to the post data
+              'image':
+                  imageUrl ?? _defaultImage, // Use the new method for image URL
+            });
+          }
+        }
+
+        setState(() {
+          _blogPosts = tempPosts; // Update the blog posts list
+          _isLoading = false; // Reset loading state
+        });
+      } else {
+        _showSnackBar('Không có kết nối internet. Vui lòng kiểm tra lại.');
+        print('Error: ${response.statusCode}');
+        setState(() {
+          _isLoading = false; // Reset loading state on error
+        });
+      }
+    } catch (e) {
+      _showSnackBar('Không có kết nối internet. Vui lòng kiểm tra lại.');
+      print('Error fetching blog posts: $e');
+      setState(() {
+        _isLoading = false; // Reset loading state on exception
+      });
     }
   }
 
@@ -144,7 +249,8 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _isLoading = true;
     });
-    await _fetchData();
+    await _fetchData(); // Fetch fresh data from the server
+    await _fetchBlogPosts(); // Fetch blog posts again
   }
 
   Future<void> _saveOrUpdateToFirestore() async {
@@ -191,199 +297,374 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _fetchBlogPosts() async {
-    var _postsPerPage = 6;
-    String url =
-        'https://www.blogger.com/feeds/$blogID/posts/default?max-results=$_postsPerPage';
-
-    try {
-      final response = await http.get(Uri.parse(url));
-
-      if (response.statusCode == 200) {
-        final xmlData = response.body;
-        parseXML(xmlData);
-      } else {
-        print('Lỗi: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Có lỗi xảy ra: $e');
-    }
+  // Define the _buildCategoryItem method
+  Widget _buildCategoryItem(IconData icon, String title) {
+    return Material(
+      borderRadius: BorderRadius.circular(12), // Rounded corners
+      elevation: 4, // Shadow effect
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12), // Match the border radius
+        onTap: () {
+          // Handle tap action using switch case
+          switch (title) {
+            case 'Thời khoá biểu':
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => TraCuuLichHocScreen()),
+              );
+              break;
+            case 'Kết quả học tập':
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => TraDiemScreen()),
+              );
+              break;
+            case 'Học phí':
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => TraCuuHocPhiScreen()),
+              );
+              break;
+            case 'Điểm rèn luyện':
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => TraCuuDiemRenLuyenScreen()),
+              );
+              break;
+            case 'Tìm người yêu':
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => ChatScreen(username: _maSinhVien)),
+              );
+              print("vào chat với username $_maSinhVien");
+              break;
+            case 'HPC Ranking':
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => RankScreen()),
+              );
+              break;
+            case 'Vé ra vào':
+              showSnackBar(context, 'Chưa có chức năng này!');
+              break;
+            case 'Tất cả':
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => MenuScreen()),
+              );
+              break;
+            default:
+              showSnackBar(context, 'Chưa có chức năng này!');
+          }
+        },
+        child: Container(
+          padding: EdgeInsets.all(0), // Reduced padding inside the container
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12), // Rounded corners
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon,
+                  size: 30, color: Color(0xFF2d59a4)), // Reduced icon size
+              SizedBox(height: 6), // Reduced space between icon and text
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold), // Reduced font size
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
-  void parseXML(String xmlString) {
-    final document = XmlDocument.parse(xmlString);
-    final entries = document.findAllElements('entry');
-
-    List<Map<String, String>> tempPosts = [];
-    for (var entry in entries) {
-      final title = entry.findElements('title').single.text;
-      final published = entry.findElements('published').single.text;
-      final category = entry
-          .findElements('category')
-          .firstWhere(
-            (link) =>
-                link.getAttribute('scheme') ==
-                'http://www.blogger.com/atom/ns#',
-            orElse: () => XmlElement(XmlName('category')),
-          )
-          .getAttribute('term'); // Get the category
-
-      final selfLink = entry
-          .findElements('link')
-          .firstWhere(
-            (link) => link.getAttribute('rel') == 'self',
-            orElse: () => XmlElement(XmlName('link')),
-          )
-          .getAttribute('href'); // Get the selfLink
-
-      // Ensure selfLink is not null before adding it to the post data
-      if (selfLink != null) {
-        tempPosts.add({
-          'title': title,
-          'published': published,
-          'category': category ?? "Mới",
-          'self': selfLink, // Add selfLink to the post data
-        });
-      }
-    }
-
-    setState(() {
-      _blogPosts = tempPosts; // Cập nhật danh sách bài viết
-    });
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider =
+        Provider.of<ThemeProvider>(context); // Get the theme provider
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Trang Chủ'),
+        title: Text(
+          'Xin chào! $_hoTen',
+          style: TextStyle(
+            fontSize: 20,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Color(0xFF2d59a4),
+        actions: [
+          PopupMenuButton<ThemeMode>(
+            icon: Icon(
+              themeProvider.themeMode == ThemeMode.dark
+                  ? Icons.wb_sunny // Sun icon for light theme
+                  : Icons.nights_stay, // Moon icon for dark theme
+            ),
+            onSelected: (ThemeMode newValue) {
+              themeProvider.toggleTheme(newValue);
+            },
+            itemBuilder: (BuildContext context) => [
+              PopupMenuItem(
+                value: ThemeMode.light,
+                child: Text('Sáng'),
+              ),
+              PopupMenuItem(
+                value: ThemeMode.dark,
+                child: Text('Tối'),
+              ),
+              PopupMenuItem(
+                value: ThemeMode.system,
+                child: Text('Hệ thống'),
+              ),
+            ],
+          ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: _refreshData, // Thao tác kéo để làm mới
         child: _isLoading
-            ? Center(child: CircularProgressIndicator())
+            ? Center(child: CircularProgressIndicator()) // Hiển thị loading
             : SingleChildScrollView(
                 child: Column(
                   children: [
-                    Card(
-                      margin: EdgeInsets.all(20),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      elevation: 8,
-                      child: Padding(
-                        padding: const EdgeInsets.all(20.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            SizedBox(height: 10),
-                            Text(
-                              'Xin chào! $_hoTen',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            SizedBox(height: 5),
-                            Text(
-                              'TBC tích luỹ $_tbcTichLuy Xếp loại $_xepLoaiHT',
-                              style: TextStyle(
-                                fontSize: 16, // Giảm kích thước font
-                              ),
-                            ),
-                            Text(
-                              'Xếp loại học tập $_xepLoaiHT',
-                              style: TextStyle(
-                                fontSize: 16, // Giảm kích thước font
-                              ),
-                            ),
-                            SizedBox(height: 5),
-                            Text(
-                              'Tín chỉ tích luỹ $_tinChiTichLuy',
-                              style: TextStyle(
-                                fontSize: 16, // Giảm kích thước font
-                              ),
-                            ),
-                            Text(
-                              'Trạng thái: $_trangThai',
-                              style: TextStyle(
-                                fontSize: 16, // Giảm kích thước font
-                              ),
-                            ),
-                          ],
+                    SizedBox(height: 10),
+                    Container(
+                      width: double
+                          .infinity, // Đảm bảo Card chiếm toàn bộ chiều rộng
+                      child: Card(
+                        margin: EdgeInsets.all(0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
                         ),
+                        elevation: 4,
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.max,
+                            children: [
+                              SizedBox(height: 5),
+                              Text(
+                                'TBC tích lũy $_tbcTichLuy, Xếp loại $_xepLoaiHT',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                ),
+                              ),
+                              SizedBox(height: 5),
+                              Text(
+                                'Tín chỉ tích lũy $_tinChiTichLuy',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: 20),
+                    // Danh mục
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Danh mục',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     SizedBox(height: 20),
+
                     Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(
-                        'Tin tức',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                      child: GridView.count(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        crossAxisCount: 4,
+                        // 4 mục trong một dòng
+                        crossAxisSpacing: 8,
+                        // Khoảng cách giữa các cột
+                        mainAxisSpacing: 8,
+                        // Khoảng cách giữa các hàng
+                        children: [
+                          _buildCategoryItem(
+                              Icons.calendar_today, 'Thời khoá biểu'),
+                          _buildCategoryItem(
+                              Icons.add_chart, 'Kết quả học tập'),
+                          _buildCategoryItem(Icons.monetization_on, 'Học phí'),
+                          _buildCategoryItem(Icons.score, 'Điểm rèn luyện'),
+                          _buildCategoryItem(Icons.favorite, 'Tìm người yêu'),
+                          _buildCategoryItem(Icons.stars, 'HPC Ranking'),
+                          _buildCategoryItem(Icons.car_rental, 'Vé ra vào'),
+                          _buildCategoryItem(Icons.grid_view, 'Tất cả'),
+                        ],
                       ),
                     ),
-                    // Sử dụng GridView để hiển thị tin tức
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2, // Số cột
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                        childAspectRatio: 1.0,
-                      ),
-                      itemCount: _blogPosts.length,
-                      itemBuilder: (context, index) {
-                        return Card(
-                          elevation: 4,
-                          child: InkWell(
-                            onTap: () {
+
+                    SizedBox(height: 20),
+
+                    // Tin tức section
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Tin tức',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => BlogDetailScreen(
-                                      postUrl: _blogPosts[index]['self']!),
+                                  builder: (context) => BlogScreen(),
                                 ),
                               );
                             },
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    _blogPosts[index]['title']!,
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  SizedBox(height: 10),
-                                  Expanded(
-                                    child: Text(
-                                      _blogPosts[index]['published']!,
-                                      maxLines: 3,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(fontSize: 14),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Text(
-                                      _blogPosts[index]['category']!,
-                                      maxLines: 3,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(fontSize: 14),
-                                    ),
-                                  ),
-                                ],
+                            child: Text(
+                              'Xem tất cả >',
+                              style: TextStyle(
+                                color: Colors.blue,
                               ),
                             ),
                           ),
-                        );
-                      },
+                        ],
+                      ),
+                    ),
+
+                    // Danh sách tin tức theo chiều ngang
+                    Container(
+                      height: 150, // Chiều cao cố định cho phần tin tức
+                      child: _isLoading
+                          ? Center(
+                              child:
+                                  CircularProgressIndicator()) // Hiển thị loading khi dữ liệu đang được tải
+                          : ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: _blogPosts.length,
+                              itemBuilder: (context, index) {
+                                return Container(
+                                  width: 350, // Chiều rộng cố định cho mỗi Card
+                                  margin: EdgeInsets.symmetric(horizontal: 8),
+                                  child: Card(
+                                    elevation: 4,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: InkWell(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                BlogDetailScreen(
+                                              postUrl: _blogPosts[index]
+                                                  ['self']!,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Row(
+                                          children: [
+                                            // Ảnh nằm bên trái
+                                            ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(8.0),
+                                              child: Image.network(
+                                                _blogPosts[index]['image'] ??
+                                                    '',
+                                                width:
+                                                    120, // Kích thước chiều rộng cố định
+                                                height:
+                                                    120, // Kích thước chiều cao cố định
+                                                fit: BoxFit.cover,
+                                              ),
+                                            ),
+                                            SizedBox(width: 10),
+                                            // Khoảng cách giữa ảnh và text
+                                            // Tiêu đề nằm bên phải
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Text(
+                                                    _blogPosts[index]['title']!
+                                                                .length >
+                                                            50
+                                                        ? _blogPosts[index]
+                                                                    ['title']!
+                                                                .substring(
+                                                                    0, 50) +
+                                                            '...'
+                                                        : _blogPosts[index]
+                                                            ['title']!,
+                                                    style: TextStyle(
+                                                      fontSize: 18,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                    maxLines: 2,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                  Text(
+                                                    _blogPosts[index][
+                                                                    'category']!
+                                                                .length >
+                                                            50
+                                                        ? _blogPosts[index][
+                                                                    'category']!
+                                                                .substring(
+                                                                    0, 50) +
+                                                            '...'
+                                                        : _blogPosts[index]
+                                                            ['category']!,
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                    ),
+                                                    maxLines: 2,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
                     ),
                   ],
                 ),

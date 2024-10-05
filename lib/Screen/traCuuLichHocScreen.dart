@@ -8,6 +8,8 @@ import 'package:html/parser.dart' as html;
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:hpc_students/Screen/loginScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_html/flutter_html.dart';
+import 'package:html/dom.dart' as dom;
 
 class TraCuuLichHocScreen extends StatefulWidget {
   @override
@@ -37,12 +39,11 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
   Future<void> _loadCachedSchedule() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? cachedHtmlResponse = prefs.getString('cachedSchedule');
-    if (cachedHtmlResponse != null) {
-      setState(() {
-        htmlResponse = cachedHtmlResponse;
-        isLoadingSchedule = false;
-      });
-    }
+    setState(() {
+      htmlResponse = cachedHtmlResponse;
+      isLoadingSchedule =
+          cachedHtmlResponse == null; // Only show loading if no cache is found
+    });
   }
 
   Future<void> fetchWeeks(String year) async {
@@ -136,7 +137,7 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
       Uri.parse(url),
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Cookie': cookie!,
+        'Cookie': cookie,
       },
       body: postData,
     );
@@ -147,7 +148,7 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
         isLoadingSchedule = false;
       });
 
-      // Cache dữ liệu lịch học sau khi tải thành công
+      // Cache the HTML response
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString('cachedSchedule', htmlResponse!); // Save to cache
     } else {
@@ -171,6 +172,108 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
     }
   }
 
+  List<Widget> _buildScheduleCards(String htmlResponse) {
+    var document = html.parse(htmlResponse);
+    List<Widget> cards = [];
+    var rows = document.querySelectorAll('table tbody tr');
+    List<String> daysOfWeek = [
+      "Thứ Hai",
+      "Thứ Ba",
+      "Thứ Tư",
+      "Thứ Năm",
+      "Thứ Sáu",
+      "Thứ Bảy",
+      "Chủ Nhật"
+    ];
+
+    // Initialize a map to track classes for each day with non-null empty lists
+    Map<String, List<Widget>> dayClasses = {
+      for (var day in daysOfWeek) day: []
+    };
+
+    for (var row in rows) {
+      var cells = row.querySelectorAll('td');
+      if (cells.length > 1) {
+        String timeSlot = cells[0].text.trim();
+        int startingPeriod =
+            int.tryParse(timeSlot) ?? 0; // Parse the starting period
+        for (var i = 1; i < cells.length - 1; i++) {
+          // Skip first and last column which are time slots
+          var cell = cells[i];
+          var content = cell.text.trim();
+          if (cell.attributes.containsKey('rowspan') && content.isNotEmpty) {
+            int rowspan = int.parse(cell.attributes['rowspan']!);
+            var details = content.split(
+                '<br>'); // Assuming details are separated by <br> tags in HTML
+
+            // Calculate the adjusted day index based on the starting period
+            int dayIndex = i - 1;
+            if (startingPeriod == 8) {
+              dayIndex = (dayIndex + 2) %
+                  7; // Shift the day by 2, wrap around using modulo
+            }
+
+            // Safely add details to the corresponding adjusted day's list
+            List<Widget>? dayList = dayClasses[daysOfWeek[dayIndex]];
+            if (dayList != null) {
+              dayList.add(
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                          'Tiết: $timeSlot - ${int.parse(timeSlot) + rowspan - 1}',
+                          style: TextStyle(fontSize: 16)),
+                      for (var detail in details)
+                        Text(detail, style: TextStyle(fontSize: 14)),
+                    ],
+                  ),
+                ),
+              );
+            }
+          }
+        }
+      }
+    }
+
+    // Add cards for each day, including "Nghỉ" for days without classes
+    for (var day in daysOfWeek) {
+      List<Widget>? dayList = dayClasses[day];
+      if (dayList != null && dayList.isEmpty) {
+        cards.add(
+          Card(
+            margin: EdgeInsets.all(8.0),
+            child: ListTile(
+              title: Text(day),
+              subtitle: Text('Nghỉ', style: TextStyle(color: Colors.red)),
+            ),
+          ),
+        );
+      } else if (dayList != null) {
+        cards.add(
+          Card(
+            margin: EdgeInsets.all(8.0),
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(day,
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  ...dayList,
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+    }
+
+    return cards;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -178,7 +281,7 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
         title: Text('Tra cứu lịch học'),
       ),
       body: RefreshIndicator(
-        onRefresh: refreshData, // Gọi hàm refreshData khi kéo xuống
+        onRefresh: refreshData,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -213,16 +316,60 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
                         (week) => week['value'] == selectedWeek)['text']!
                     : '',
               ),
-              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return Dialog(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            AppBar(
+                              title: Text("Bảng lịch học"),
+                              automaticallyImplyLeading: false,
+                              actions: [
+                                IconButton(
+                                  icon: Icon(Icons.close),
+                                  onPressed: () => Navigator.of(context).pop(),
+                                )
+                              ],
+                            ),
+                            htmlResponse == null
+                                ? Center(child: CircularProgressIndicator())
+                                : Expanded(
+                                    child: SingleChildScrollView(
+                                      scrollDirection: Axis.vertical,
+                                      child: SingleChildScrollView(
+                                        scrollDirection: Axis.horizontal,
+                                        child: HtmlWidget(htmlResponse!),
+                                      ),
+                                    ),
+                                  ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+                child: Text('Xem bảng',
+                  style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white,
+                ),),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF2d59a4),
+                  padding: EdgeInsets.symmetric(vertical: 15),
+                  minimumSize: Size(double.infinity, 50),
+                ),
+              ),
               if (isLoadingSchedule)
-                CircularProgressIndicator()
+                Center(child: CircularProgressIndicator())
               else if (htmlResponse != null)
                 Expanded(
                   child: SingleChildScrollView(
-                    scrollDirection: Axis.vertical,
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: HtmlWidget(htmlResponse!),
+                    child: Column(
+                      children: _buildScheduleCards(htmlResponse!),
                     ),
                   ),
                 ),

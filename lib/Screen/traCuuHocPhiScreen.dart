@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -9,6 +8,7 @@ import '../include/cookie_provider.dart';
 import '../include/config.dart'; // File config chứa baseUrl
 import 'loginScreen.dart'; // Thêm đường dẫn đến file đăng nhập
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 class TraCuuHocPhiScreen extends StatefulWidget {
   @override
@@ -132,21 +132,6 @@ class _TraCuuHocPhiScreenState extends State<TraCuuHocPhiScreen> {
             ?.text
             .trim() ??
         '';
-
-    data.add({
-      'title': 'Tổng số tiền phải nộp',
-      'value': totalAmountLabel,
-    });
-    data.add({
-      'title': 'Tổng số tiền đã nộp',
-      'value': totalPaidLabel,
-    });
-    data.add({
-      'title': 'Số tiền thừa/thiếu',
-      'value': balanceLabel,
-    });
-
-    // Lấy dữ liệu bảng
     var tableRows = newsDiv
         .querySelectorAll("table#gvTaiChinh tbody tr:not(.table-header)");
     for (var row in tableRows) {
@@ -163,6 +148,20 @@ class _TraCuuHocPhiScreenState extends State<TraCuuHocPhiScreen> {
         });
       }
     }
+
+    // Add new entries for total amounts
+    data.add({
+      'title': 'Tổng số tiền phải nộp',
+      'value': totalAmountLabel,
+    });
+    data.add({
+      'title': 'Tổng số tiền đã nộp',
+      'value': totalPaidLabel,
+    });
+    data.add({
+      'title': 'Số tiền thừa/thiếu',
+      'value': balanceLabel,
+    });
 
     return data;
   }
@@ -183,20 +182,137 @@ class _TraCuuHocPhiScreenState extends State<TraCuuHocPhiScreen> {
 
   @override
   Widget build(BuildContext context) {
+    var theme = Theme.of(context);
+
     double tongSoTienPhaiNop = _calculateTotal(_hocPhiData, 'soTienPhaiNop');
     double tongSoTienDaNop = _calculateTotal(_hocPhiData, 'soTienDaNop');
     double tongThuaThieu = _calculateTotal(_hocPhiData, 'thuaThieu');
 
+    // Group data by academic year
+    Map<String, List<Map<String, String>>> groupedData = {};
+    for (var item in _hocPhiData) {
+      String yearKey = item['namHoc'] ?? ''; // Provide a default value
+      if (yearKey.isNotEmpty) {
+        // Check if yearKey is not empty
+        (groupedData[yearKey] ??= []).add(item);
+      }
+    }
+
+    List<String> years = groupedData.keys.toList();
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Tra Cứu Học Phí'),
+        backgroundColor: theme.appBarTheme.backgroundColor,
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               child: Column(
                 children: [
-                  // Hiển thị thông tin tổng số tiền dưới dạng Card
+                  Row(
+                    // Add a Row to contain the PieChart and the indicators
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 300, // Set a fixed height for the PieChart
+                          child: Card(
+                            margin: EdgeInsets.all(8.0),
+                            elevation: 4,
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: PieChart(
+                                      PieChartData(
+                                        sections: [
+                                          PieChartSectionData(
+                                            value: tongSoTienDaNop,
+                                            title: 'Đã nộp',
+                                            color: Colors.green,
+                                            radius: 50,
+                                          ),
+                                          PieChartSectionData(
+                                            value: tongThuaThieu,
+                                            title: 'Thừa/thiếu',
+                                            color: Colors.red,
+                                            radius: 50,
+                                          ),
+                                        ],
+                                        sectionsSpace: 2,
+                                        centerSpaceRadius: 40,
+                                        pieTouchData: PieTouchData(
+                                          touchCallback: (FlTouchEvent event,
+                                              PieTouchResponse?
+                                                  pieTouchResponse) {
+                                            if (event is FlTapUpEvent &&
+                                                pieTouchResponse != null) {
+                                              int touchedIndex =
+                                                  pieTouchResponse
+                                                      .touchedSection!
+                                                      .touchedSectionIndex;
+                                              String title = '';
+                                              String content = '';
+                                              if (touchedIndex == 0) {
+                                                title = 'Số tiền đã nộp';
+                                                content = tongSoTienDaNop
+                                                        .toStringAsFixed(0) +
+                                                    ' ₫';
+                                              } else if (touchedIndex == 1) {
+                                                title = 'Số tiền thừa/thiếu';
+                                                content = tongThuaThieu
+                                                        .toStringAsFixed(0) +
+                                                    ' ₫';
+                                              }
+                                              showDialog(
+                                                context: context,
+                                                builder: (_) => AlertDialog(
+                                                  title: Text(title),
+                                                  content: Text(content),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () {
+                                                        Navigator.pop(context);
+                                                      },
+                                                      child: Text('OK'),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  // Add indicators here inside the same Card
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Indicator(
+                                        color: Colors.green,
+                                        text: 'Đã nộp',
+                                        isSquare: true,
+                                      ),
+                                      SizedBox(height: 4),
+                                      Indicator(
+                                        color: Colors.red,
+                                        text: 'Thừa/thiếu',
+                                        isSquare: true,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Existing Card widget to display total amounts
                   Card(
                     margin: EdgeInsets.all(8.0),
                     elevation: 4,
@@ -207,121 +323,113 @@ class _TraCuuHocPhiScreenState extends State<TraCuuHocPhiScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildRichText('Tổng số tiền phải nộp:',
-                              tongSoTienPhaiNop.toStringAsFixed(0) + ' ₫',
-                              textColor: Colors.black),
+                              tongSoTienPhaiNop.toStringAsFixed(0) + ' ₫'),
                           SizedBox(height: 8),
                           _buildRichText('Tổng số tiền đã nộp:',
-                              tongSoTienDaNop.toStringAsFixed(0) + ' ₫',
-                              textColor: Colors.black),
+                              tongSoTienDaNop.toStringAsFixed(0) + ' ₫'),
                           SizedBox(height: 8),
                           _buildRichText('Số tiền thừa/thiếu:',
-                              tongThuaThieu.toStringAsFixed(0) + ' ₫',
-                              textColor: Colors.black),
+                              tongThuaThieu.toStringAsFixed(0) + ' ₫'),
                         ],
                       ),
                     ),
                   ),
                   SizedBox(height: 20),
-
-                  // Hiển thị dữ liệu bảng dưới dạng Card
-                  for (var item in _hocPhiData)
-                    if (item.containsKey('error'))
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(item['error']!,
-                            style: TextStyle(color: Colors.red)),
-                      )
-                    else if (item.containsKey('hocKy'))
-                      Card(
+                  // Display data grouped by academic year
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    itemCount: years.length,
+                    itemBuilder: (context, index) {
+                      String year = years[index];
+                      List<Map<String, String>> yearData = groupedData[year]!;
+                      return Card(
                         margin: EdgeInsets.all(8.0),
-                        elevation: 6,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15.0),
-                        ),
-                        child: Container(
-                          padding: const EdgeInsets.all(16.0),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.lightBlueAccent,
-                                Colors.blueAccent
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(15.0),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black12,
-                                blurRadius: 8.0,
-                                offset: Offset(0, 4),
-                              ),
-                            ],
-                          ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Năm học: ${item['namHoc'] ?? 'N/A'}',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Học kỳ: ${item['hocKy'] ?? 'N/A'}',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
+                              Text('Năm học: $year',
+                                  style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold)),
+                              SizedBox(height: 10),
+                              Column(
+                                children: yearData.map((data) {
+                                  return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Học kỳ: ${data['hocKy'] ?? 'N/A'}'),
+                                      Text(
+                                          'Mức học phí: ${data['mucHocPhi'] ?? 'N/A'} ₫'),
+                                      Text(
+                                          'Miễn giảm: ${data['mienGiam'] ?? 'N/A'} ₫'),
+                                      Text(
+                                          'Số tiền phải nộp: ${data['soTienPhaiNop'] ?? 'N/A'} ₫'),
+                                      Text(
+                                          'Số tiền đã nộp: ${data['soTienDaNop'] ?? 'N/A'} ₫'),
+                                      Text(
+                                          'Thừa thiếu: ${data['thuaThieu'] ?? 'N/A'} ₫'),
+                                      SizedBox(height: 10),
+                                    ],
+                                  );
+                                }).toList(),
                               ),
-                              SizedBox(height: 12.0),
-                              _buildRichText(
-                                  'Mức học phí:', item['mucHocPhi'] ?? '0',
-                                  textColor: Colors.white),
-                              _buildRichText(
-                                  'Miễn giảm:', item['mienGiam'] ?? '0',
-                                  textColor: Colors.white),
-                              _buildRichText('Số tiền phải nộp:',
-                                  item['soTienPhaiNop'] ?? '0',
-                                  textColor: Colors.white),
-                              _buildRichText(
-                                  'Số tiền đã nộp:', item['soTienDaNop'] ?? '0',
-                                  textColor: Colors.white),
-                              _buildRichText(
-                                  'Thừa/Thiếu:', item['thuaThieu'] ?? '0',
-                                  textColor: Colors.red),
                             ],
                           ),
                         ),
-                      ),
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
     );
   }
 
-  RichText _buildRichText(String title, String value,
-      {Color textColor = Colors.black}) {
+  RichText _buildRichText(String title, String value) {
     return RichText(
       text: TextSpan(
         children: [
-          TextSpan(
-              text: title, style: TextStyle(fontSize: 16, color: textColor)),
+          TextSpan(text: title, style: TextStyle(fontSize: 14)),
           TextSpan(
               text: ' $value',
-              style: TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
         ],
       ),
+    );
+  }
+}
+
+class Indicator extends StatelessWidget {
+  final Color color;
+  final String text;
+  final bool isSquare;
+
+  const Indicator({
+    Key? key,
+    required this.color,
+    required this.text,
+    this.isSquare = false,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: <Widget>[
+        Container(
+          width: isSquare ? 16 : 12,
+          height: isSquare ? 16 : 12,
+          decoration: BoxDecoration(
+            shape: isSquare ? BoxShape.rectangle : BoxShape.circle,
+            color: color,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(text),
+      ],
     );
   }
 }
