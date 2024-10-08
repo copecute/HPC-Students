@@ -114,7 +114,7 @@ class GridButton extends StatelessWidget {
       {
         'id': 12,
         'icon': Icons.mark_email_unread_sharp,
-        'label': 'Yêu cầu xin giấy tờ',
+        'label': 'Quản lý yêu cầu',
         'color': Colors.teal
       },
       {

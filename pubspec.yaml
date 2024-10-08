@@ -35,6 +35,8 @@ dependencies:
   path: ^1.9.0
   permission_handler: ^11.3.1
   webview_flutter: ^4.9.0
+  nfc_manager: ^3.5.0
+  flutter_inappwebview: ^6.1.4
 
 
 dev_dependencies:
@@ -56,3 +58,7 @@ flutter:
     - assets/avatar.png
     - assets/audio/notification.mp3
     - assets/doi-mat-khau.svg
+    - assets/AccessControl/Parking.svg
+    - assets/AccessControl/Parked.svg
+    - assets/AccessControl/ParkingAccessDenied.svg
+    - assets/AccessControl/GetCarSuccessfully.svg
