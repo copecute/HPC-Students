@@ -322,19 +322,18 @@ class _TraCuuHocPhiScreenState extends State<TraCuuHocPhiScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildRichText('Tổng số tiền phải nộp:',
-                              tongSoTienPhaiNop.toStringAsFixed(0) + ' ₫'),
+                          Text(
+                              'Tổng số tiền phải nộp: ${tongSoTienPhaiNop.toStringAsFixed(0)} ₫'),
                           SizedBox(height: 8),
-                          _buildRichText('Tổng số tiền đã nộp:',
-                              tongSoTienDaNop.toStringAsFixed(0) + ' ₫'),
+                          Text(
+                              'Tổng số tiền đã nộp: ${tongSoTienDaNop.toStringAsFixed(0)} ₫'),
                           SizedBox(height: 8),
-                          _buildRichText('Số tiền thừa/thiếu:',
-                              tongThuaThieu.toStringAsFixed(0) + ' ₫'),
+                          Text(
+                              'Số tiền thừa/thiếu: ${tongThuaThieu.toStringAsFixed(0)} ₫'),
                         ],
                       ),
                     ),
                   ),
-                  SizedBox(height: 20),
                   // Display data grouped by academic year
                   ListView.builder(
                     shrinkWrap: true,

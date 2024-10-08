@@ -10,6 +10,7 @@ import '../include/cookie_provider.dart';
 import '../include/config.dart';
 import 'loginScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 
 class TraCuuDiemRenLuyenScreen extends StatefulWidget {
   @override
@@ -18,34 +19,14 @@ class TraCuuDiemRenLuyenScreen extends StatefulWidget {
 }
 
 class _TraCuuDiemRenLuyenScreenState extends State<TraCuuDiemRenLuyenScreen> {
-  List<Map<String, String>> _cardData = [];
+  String? htmlResponse;
   bool _isLoading = true;
   bool _isFetched = false; // Flag to check if data has been fetched
 
   @override
   void initState() {
     super.initState();
-    _loadData(); // Load data on initialization
-  }
-
-  Future<void> _loadData() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? cachedData =
-        prefs.getString('cachedDiemRenLuyen'); // Load cached data
-
-    if (cachedData != null) {
-      // If cached data exists, parse it and update the UI
-      List<dynamic> jsonData = jsonDecode(cachedData); // Decode JSON
-      _cardData = List<Map<String, String>>.from(jsonData.map((item) =>
-          Map<String, String>.from(item))); // Cast to List<Map<String, String>>
-      setState(() {
-        _isLoading = false; // Set loading to false
-        _isFetched = true; // Mark data as fetched
-      });
-    } else {
-      // If no cached data, fetch from the server
-      await _fetchData();
-    }
+    _fetchData(); // Fetch data on initialization
   }
 
   Future<void> _fetchData() async {
@@ -79,51 +60,23 @@ class _TraCuuDiemRenLuyenScreenState extends State<TraCuuDiemRenLuyenScreen> {
 
       if (response.statusCode == 200) {
         var document = htmlParser.parse(response.body);
-        var table = document.querySelector("div.row.fullwidth table");
+        var table = document.querySelector("div.news table.table-bordered");
 
-        if (table != null) {
-          var rows = table.querySelectorAll("tr");
-
-          // Extract data from the table rows
-          List<Map<String, String>> cardData = [];
-
-          for (var row in rows.skip(1)) {
-            var cells = row.querySelectorAll("td");
-            if (cells.length >= 2) {
-              cardData.add({
-                'Tổng khóa': cells[0].text.trim(),
-                'Xếp loại khóa': cells[1].text.trim(),
-              });
-            }
-          }
-
-          setState(() {
-            _cardData = cardData; // Update the card data
-            _isLoading = false; // Set loading to false
-            _isFetched = true; // Mark data as fetched
-          });
-
-          // Cache the data
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          await prefs.setString(
-              'cachedDiemRenLuyen', jsonEncode(cardData)); // Save to cache
-        } else {
-          setState(() {
-            _cardData = [];
-            _isLoading = false; // Set loading to false
-            _isFetched = true; // Mark data as fetched
-          });
-        }
+        setState(() {
+          htmlResponse = table?.outerHtml; // Store only the table HTML
+          _isLoading = false; // Set loading to false
+          _isFetched = true; // Mark data as fetched
+        });
       } else {
         setState(() {
-          _cardData = [];
+          htmlResponse = null;
           _isLoading = false; // Set loading to false
           _isFetched = true; // Mark data as fetched
         });
       }
     } catch (e) {
       setState(() {
-        _cardData = [];
+        htmlResponse = null;
         _isLoading = false; // Set loading to false
         _isFetched = true; // Mark data as fetched
       });
@@ -151,51 +104,17 @@ class _TraCuuDiemRenLuyenScreenState extends State<TraCuuDiemRenLuyenScreen> {
         child: _isLoading
             ? Center(
                 child: CircularProgressIndicator()) // Show loading indicator
-            : _cardData.isEmpty
+            : htmlResponse == null
                 ? Center(
                     child:
                         Text('Không có dữ liệu')) // When no data is available
-                : ListView.builder(
-                    itemCount: _cardData.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Card(
-                          elevation: 4, // Card shadow effect
-                          shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(10), // Rounded corners
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Tổng khóa: ${_cardData[index]['Tổng khóa']}',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue,
-                                  ),
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Xếp loại khóa: ${_cardData[index]['Xếp loại khóa']}',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: _cardData[index]['Xếp loại khóa'] ==
-                                            'TB. Khá'
-                                        ? Colors.red
-                                        : Colors.black,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
+                : SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: HtmlWidget(
+                        htmlResponse!, // Render the HTML response
+                      ),
+                    ),
                   ),
       ),
     );

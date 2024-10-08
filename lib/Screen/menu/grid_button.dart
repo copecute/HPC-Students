@@ -77,48 +77,54 @@ class GridButton extends StatelessWidget {
       },
       {
         'id': 6,
+        'icon': Icons.score,
+        'label': 'Điểm rèn luyện',
+        'color': Colors.deepOrange
+      },
+      {
+        'id': 7,
         'icon': Icons.image,
         'label': 'Chia sẻ ảnh',
         'color': Colors.deepOrange
       },
       {
-        'id': 7,
+        'id': 8,
         'icon': Icons.sentiment_satisfied_alt_outlined,
         'label': 'Lớp học Online',
         'color': Colors.teal
       },
       {
-        'id': 8,
+        'id': 9,
         'icon': Icons.stars,
         'label': 'HPC Ranking',
         'color': Colors.indigo
       },
       {
-        'id': 9,
+        'id': 10,
         'icon': Icons.monetization_on,
         'label': 'Học phí',
         'color': Colors.brown
       },
       {
-        'id': 10,
+        'id': 11,
         'icon': Icons.rate_review,
         'label': 'HPC Confession',
         'color': Colors.purple
       },
       {
-        'id': 10,
+        'id': 12,
         'icon': Icons.mark_email_unread_sharp,
         'label': 'Yêu cầu xin giấy tờ',
         'color': Colors.teal
       },
       {
-        'id': 12,
+        'id': 13,
         'icon': Icons.newspaper,
         'label': 'Bài viết',
         'color': Colors.blueGrey
       },
       {
-        'id': 11,
+        'id': 14,
         'icon': Icons.pets,
         'label': 'CLUB Thịt Chó Bách Khoa',
         'color': Colors.red

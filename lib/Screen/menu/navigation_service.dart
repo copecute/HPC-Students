@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hpc_students/Screen/TraCuuDiemRenLuyenScreen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:hpc_students/Screen/Blog/blogScreen.dart';
 import 'package:hpc_students/Screen/rankScreen.dart';
@@ -47,25 +48,31 @@ Future<void> handleNavigation(BuildContext context, int id) async {
         showSnackBar(context, 'Vui lòng đăng nhập lại!');
       }
       break;
-    case 8:
+    case 6:
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => RankScreen()),
+        MaterialPageRoute(builder: (context) => TraCuuDiemRenLuyenScreen()),
       );
       break;
     case 9:
       Navigator.push(
         context,
+        MaterialPageRoute(builder: (context) => RankScreen()),
+      );
+      break;
+    case 10:
+      Navigator.push(
+        context,
         MaterialPageRoute(builder: (context) => TraCuuHocPhiScreen()),
       );
       break;
-    case 11:
+    case 12:
       final Uri url = Uri.parse('https://zalo.me/g/uttoza177');
       if (!await launchUrl(url)) {
         throw 'Không thể mở CLUB Thịt Chó Bách Khoa';
       }
       break;
-    case 12:
+    case 13:
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => BlogScreen()),

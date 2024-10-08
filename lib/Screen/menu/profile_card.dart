@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:hpc_students/Screen/menu/profile.dart';
+import 'package:hpc_students/Screen/Profile/profile.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileCard extends StatelessWidget {
   final String hoTen;
@@ -40,37 +41,53 @@ class ProfileCard extends StatelessWidget {
         elevation: 4,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center, // Center vertically
+            crossAxisAlignment:
+                CrossAxisAlignment.center, // Center horizontally
             children: [
-              Center(
-                child: CircleAvatar(
-                  radius: 40,
-                  backgroundImage: (avatarUrl != null && avatarUrl!.isNotEmpty)
-                      ? NetworkImage(avatarUrl!)
-                      : AssetImage('assets/avatar.png') as ImageProvider, // Dùng ảnh tải từ mạng hoặc ảnh local
+              CircleAvatar(
+                radius: 40,
+                backgroundImage: (avatarUrl != null && avatarUrl!.isNotEmpty)
+                    ? NetworkImage(avatarUrl!)
+                    : AssetImage('assets/avatar.png')
+                        as ImageProvider, // Dùng ảnh tải từ mạng hoặc ảnh local
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start, // Align text to the left
+                  mainAxisAlignment:
+                      MainAxisAlignment.center, // Center vertically
+                  children: [
+                    Text(
+                      '$hoTen',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    FutureBuilder(
+                      future: SharedPreferences.getInstance()
+                          .then((prefs) => prefs.getString('username')),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return Center(child: CircularProgressIndicator());
+                        } else if (snapshot.hasError) {
+                          return Text('Error: ${snapshot.error}');
+                        } else if (snapshot.hasData) {
+                          return Text('Mã sinh viên: ${snapshot.data}');
+                        } else {
+                          return Text('Xem trang cá nhân');
+                        }
+                      },
+                    ),
+                  ],
                 ),
               ),
-              SizedBox(height: 16),
-        Center(
-          child: Text(
-                '$hoTen',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-        ),
-              SizedBox(height: 8),
-              Text('Điện thoại: $dienThoai'),
-              SizedBox(height: 8),
-              Text('Ngày sinh: $ngaySinh'),
-              SizedBox(height: 8),
-              Text('Giới tính: $gioiTinh'),
-              SizedBox(height: 8),
-              Text('Trường THPT: $truongTHPT'),
-              SizedBox(height: 8),
-              Text('CMND: $cmnd'),
             ],
           ),
         ),

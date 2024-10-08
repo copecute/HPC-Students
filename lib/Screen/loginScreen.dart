@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart'; // Import url_launcher
-import '../include/config.dart';
-import '../main.dart';
-import '../include/cookie_provider.dart';
+import 'package:hpc_students/include/config.dart';
+import 'package:hpc_students/main.dart';
+import 'package:hpc_students/include/cookie_provider.dart';
+import 'package:hpc_students/Screen/traCuuVanBang.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // Import ThemeProvider
@@ -363,6 +364,29 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ],
                             ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium!
+                                .copyWith(
+                                  color: brightness == Brightness.dark
+                                      ? Colors
+                                          .white70 // Light text for dark theme
+                                      : Colors
+                                          .black54, // Dark text for light theme
+                                ),
+                          ),
+                        ),
+                        const SizedBox(height: 16.0),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => TraCuuVanBangScreen()),
+                            );
+                          },
+                          child: Text(
+                            'Tra cứu văn bằng',
                             style: Theme.of(context)
                                 .textTheme
                                 .bodyMedium!
