@@ -25,7 +25,17 @@ Future<void> loadData(
     Function(String) setNgaySinh, // Callback for ngaySinh
     Function(String) setGioiTinh, // Callback for gioiTinh
     Function(String) setTruongTHPT, // Callback for truongTHPT
-    Function(String) setCmnd // Callback for cmnd
+    Function(String) setCmnd, // Callback for cmnd
+    Function(String) setTinh, // Callback for province
+    Function(String) setHuyen, // Callback for district
+    Function(String) setXa, // Callback for commune
+    Function(String) setChuyenNganh, // Callback for Chuyên ngành
+    Function(String) setHeDaoTao, // Callback for Hệ đào tạo
+    Function(String) setKhoaHoc, // Callback for Khóa học
+    Function(String) setNienKhoa, // Callback for Niên khóa
+    Function(String) setDanToc, // Callback for Dân tộc
+    Function(String) setQuocTich, // Callback for Quốc tịch
+    Function(String) setTonGiao // Callback for Tôn giáo
     ) async {
   print("Starting to load data...");
   String? cookie =
@@ -74,11 +84,64 @@ Future<void> loadData(
                 .getElementById("ID_gioi_tinh")
                 ?.querySelector('option[selected]')
                 ?.text ??
-            'Nam';
+            '';
         String truongTHPT =
             document.getElementById("TruongTHPT")?.attributes['value'] ?? '';
         String cmnd =
             document.getElementById("CMND")?.attributes['value'] ?? '';
+
+        // Get selected province, district, and commune
+        String tinh = document
+                .getElementById("ID_tinh_tt")
+                ?.querySelector('option[selected]')
+                ?.text ??
+            ''; // Get selected province text
+        String huyen = document
+                .getElementById("ID_huyen_tt")
+                ?.querySelector('option[selected]')
+                ?.text ??
+            ''; // Get selected district text
+        String xa = document
+                .getElementById("ID_xa_tt")
+                ?.querySelector('option[selected]')
+                ?.text ??
+            ''; // Get selected commune text
+
+        // Get selected Dân tộc, Quốc tịch, and Tôn giáo
+        String danToc = document
+                .getElementById("ID_dan_toc")
+                ?.querySelector('option[selected]')
+                ?.text ??
+            ''; // Get selected Dân tộc text
+        String quocTich = document
+                .getElementById("ID_quoc_tich")
+                ?.querySelector('option[selected]')
+                ?.text ??
+            ''; // Get selected Quốc tịch text
+        String tonGiao = document
+                .getElementById("Ton_giao")
+                ?.querySelector('option[selected]')
+                ?.text ??
+            ''; // Get selected Tôn giáo text
+
+        // Extract new fields based on static labels
+        String chuyenNganh = '';
+        String heDaoTao = '';
+        String khoaHoc = '';
+        String nienKhoa = '';
+
+        // Iterate through span elements to find the corresponding input values
+        for (var span in document.querySelectorAll('span.NoiDungHoSo')) {
+          if (span.text.contains("Chuyên ngành:")) {
+            chuyenNganh = span.nextElementSibling?.attributes['value'] ?? '';
+          } else if (span.text.contains("Hệ đào tạo:")) {
+            heDaoTao = span.nextElementSibling?.attributes['value'] ?? '';
+          } else if (span.text.contains("Khóa học:")) {
+            khoaHoc = span.nextElementSibling?.attributes['value'] ?? '';
+          } else if (span.text.contains("Niên khóa:")) {
+            nienKhoa = span.nextElementSibling?.attributes['value'] ?? '';
+          }
+        }
 
         // Ensure you are setting all the necessary data
         setHoTen(hoTen);
@@ -87,11 +150,23 @@ Future<void> loadData(
         setGioiTinh(gioiTinh);
         setTruongTHPT(truongTHPT);
         setCmnd(cmnd);
+        setTinh(tinh); // Set province
+        setHuyen(huyen); // Set district
+        setXa(xa); // Set commune
+        setChuyenNganh(chuyenNganh); // Set Chuyên ngành
+        setHeDaoTao(heDaoTao); // Set Hệ đào tạo
+        setKhoaHoc(khoaHoc); // Set Khóa học
+        setNienKhoa(nienKhoa); // Set Niên khóa
+        setDanToc(danToc); // Set Dân tộc
+        setQuocTich(quocTich); // Set Quốc tịch
+        setTonGiao(tonGiao); // Set Tôn giáo
 
+        print('Tỉnh: $tinh');
         setAvatarUrl(null); // Reset avatar URL
         setIsLoading(false);
       });
 
+      // avatar
       await checkFirebaseForAvatar(context, maSinhVien, dienThoai, setState,
           setAvatarUrl, setIsLoading, setIsFetched);
     } else {
