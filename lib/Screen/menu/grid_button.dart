@@ -114,7 +114,7 @@ class GridButton extends StatelessWidget {
       {
         'id': 12,
         'icon': Icons.mark_email_unread_sharp,
-        'label': 'Yêu cầu xin giấy tờ',
+        'label': 'Quản lý yêu cầu',
         'color': Colors.teal
       },
       {
@@ -128,6 +128,13 @@ class GridButton extends StatelessWidget {
         'icon': Icons.pets,
         'label': 'CLUB Thịt Chó Bách Khoa',
         'color': Colors.red
+      },
+      {
+        'id': 15,
+        'icon': Icons.card_membership_sharp,
+        'label': 'Tra cứu văn bằng',
+        'color': Colors.amber
+
       },
     ];
   }

@@ -177,7 +177,8 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
 
       modifiedHtmlResponse = modifiedHtmlResponse.replaceAllMapped(
         RegExp(r'<td rowspan="\d+" style="'),
-            (match) => '<td rowspan="${match.group(0)!.split('"')[1]}" style="color:black;border: 1px solid #ddd; padding: 10px; text-align: center; vertical-align: middle; ',
+        (match) =>
+            '<td rowspan="${match.group(0)!.split('"')[1]}" style="color:black;border: 1px solid #ddd; padding: 10px; text-align: center; vertical-align: middle; ',
       );
 
       modifiedHtmlResponse = modifiedHtmlResponse.replaceAll(

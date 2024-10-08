@@ -318,7 +318,7 @@ class _BlogScreenState extends State<BlogScreen> {
                               icon: Icon(Icons.chevron_left),
                               onPressed: _prevPage,
                             ),
-                            Text('Page $_currentPage of $_totalPages'),
+                            Text('Trang $_currentPage tổng $_totalPages'),
                             IconButton(
                               icon: Icon(Icons.chevron_right),
                               onPressed: _nextPage,

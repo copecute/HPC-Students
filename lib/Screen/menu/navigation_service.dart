@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hpc_students/Screen/TraCuuDiemRenLuyenScreen.dart';
+import 'package:hpc_students/Screen/traCuuVanBang.dart';
+import 'package:hpc_students/Screen/veRaVao/traCuuRaVao.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:hpc_students/Screen/Blog/blogScreen.dart';
 import 'package:hpc_students/Screen/rankScreen.dart';
@@ -10,12 +12,20 @@ import 'package:hpc_students/Screen/timNguoiYeu/chat.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_database/firebase_database.dart';
 
+import '../yeuCau/traCuuYeuCau.dart';
+
 Future<void> handleNavigation(BuildContext context, int id) async {
   switch (id) {
     case 2:
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => TraDiemScreen()),
+      );
+      break;
+    case 3:
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => TraCuuRaVao()),
       );
       break;
     case 4:
@@ -67,15 +77,27 @@ Future<void> handleNavigation(BuildContext context, int id) async {
       );
       break;
     case 12:
-      final Uri url = Uri.parse('https://zalo.me/g/uttoza177');
-      if (!await launchUrl(url)) {
-        throw 'Không thể mở CLUB Thịt Chó Bách Khoa';
-      }
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => TraCuuYeuCauScreen()),
+      );
       break;
     case 13:
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => BlogScreen()),
+      );
+      break;
+    case 14:
+      final Uri url = Uri.parse('https://zalo.me/g/uttoza177');
+      if (!await launchUrl(url)) {
+        throw 'Không thể mở CLUB Thịt Chó Bách Khoa';
+      }
+      break;
+    case 15:
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => TraCuuVanBangScreen()),
       );
       break;
     default:

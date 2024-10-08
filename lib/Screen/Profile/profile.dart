@@ -46,7 +46,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _avatarUrl = prefs.getString('avatarUrl'); // Load avatar URL
       _tinh = prefs.getString('tinh') ?? ''; // Load province
       _huyen = prefs.getString('huyen') ?? ''; // Load district
-      _xa = prefs.getString('xa') ?? 'Thị trấn Hoà Thuận'; // Load commune
+      _xa = prefs.getString('xa') ?? ''; // Load commune
       _chuyenNganh = prefs.getString('chuyenNganh') ?? ''; // Load Chuyên ngành
       _heDaoTao = prefs.getString('heDaoTao') ?? ''; // Load Hệ đào tạo
       _khoaHoc = prefs.getString('khoaHoc') ?? ''; // Load Khóa học

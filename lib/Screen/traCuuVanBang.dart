@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hpc_students/include/config.dart';
 import 'package:http/http.dart' as http; // Thêm import cho http
 import 'dart:convert'; // Thêm import cho json
 import 'package:html/parser.dart' as htmlParser; // Thêm import cho html
@@ -25,7 +26,7 @@ class _TraCuuVanBangScreenState extends State<TraCuuVanBangScreen> {
     final maSv = maSinhVienController.text;
     final soHieu = soHieuController.text;
     final response = await http.get(Uri.parse(
-        'https://sinhvien.bachkhoahanoi.edu.vn/TraCuuVanBang/_Chitiet?Ma_sv=$maSv&So_hieu=$soHieu'));
+        '$baseUrl/TraCuuVanBang/_Chitiet?Ma_sv=$maSv&So_hieu=$soHieu'));
 
     if (response.statusCode == 200) {
       // Phân tích HTML
@@ -78,15 +79,34 @@ class _TraCuuVanBangScreenState extends State<TraCuuVanBangScreen> {
               controller: maSinhVienController,
               decoration: InputDecoration(labelText: 'Mã sinh viên'),
             ),
+            SizedBox(height: 20),
             TextField(
               controller: soHieuController,
-              decoration: InputDecoration(
-                  labelText: 'Số hiệu văn bằng (có thể để trống)'),
+              decoration: InputDecoration(labelText: 'Số hiệu văn bằng'),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Lưu ý: có thể tra bằng số hiệu văn bằng hoặc mã sinh viên hoặc cả hai.',
+              style: TextStyle(
+                fontSize: 14,
+                fontStyle: FontStyle.italic,
+              ),
             ),
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: search,
-              child: Text('Tìm kiếm'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF2d59a4),
+                padding: EdgeInsets.symmetric(vertical: 15),
+                minimumSize: Size(double.infinity, 50),
+              ),
+              child: Text(
+                'Tìm kiếm',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white,
+                ),
+              ),
             ),
             SizedBox(height: 20),
             if (_isLoading) // Hiển thị loading
