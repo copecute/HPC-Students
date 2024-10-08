@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hpc_students/Screen/TraCuuDiemRenLuyenScreen.dart';
+import 'package:hpc_students/Screen/traCuuVanBang.dart';
 import 'package:hpc_students/Screen/veRaVao/traCuuRaVao.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:hpc_students/Screen/Blog/blogScreen.dart';
@@ -92,6 +93,12 @@ Future<void> handleNavigation(BuildContext context, int id) async {
       if (!await launchUrl(url)) {
         throw 'Không thể mở CLUB Thịt Chó Bách Khoa';
       }
+      break;
+    case 15:
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => TraCuuVanBangScreen()),
+      );
       break;
     default:
       showSnackBar(context, 'Chưa có chức năng này!');

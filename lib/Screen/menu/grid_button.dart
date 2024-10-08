@@ -129,6 +129,13 @@ class GridButton extends StatelessWidget {
         'label': 'CLUB Thịt Chó Bách Khoa',
         'color': Colors.red
       },
+      {
+        'id': 15,
+        'icon': Icons.card_membership_sharp,
+        'label': 'Tra cứu văn bằng',
+        'color': Colors.amber
+
+      },
     ];
   }
 }
