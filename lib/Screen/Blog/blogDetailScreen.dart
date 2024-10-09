@@ -1,9 +1,27 @@
+import 'dart:collection';
+import 'package:flutter/foundation.dart'; // Import for kIsWeb
 import 'package:flutter/material.dart';
-import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart';
 import 'package:provider/provider.dart';
 import 'package:hpc_students/include/theme_provider.dart'; // Import ThemeProvider
+import 'package:flutter_inappwebview/flutter_inappwebview.dart'; // Import InAppWebView
+import 'package:flutter/services.dart'; // Import for defaultTargetPlatform
+import 'package:flutter/gestures.dart'; // Import for VerticalDragGestureRecognizer
+
+const kInitialTextSize = 100; // Initial text size percentage
+const kTextSizePlaceholder = 'TEXT_SIZE_PLACEHOLDER';
+const kTextSizeSourceJS = """
+window.addEventListener('DOMContentLoaded', function(event) {
+  document.body.style.textSizeAdjust = '$kTextSizePlaceholder%';
+  document.body.style.webkitTextSizeAdjust = '$kTextSizePlaceholder%';
+});
+""";
+
+final textSizeUserScript = UserScript(
+    source:
+        kTextSizeSourceJS.replaceAll(kTextSizePlaceholder, '$kInitialTextSize'),
+    injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START);
 
 class BlogDetailScreen extends StatefulWidget {
   final String postUrl;
@@ -15,144 +33,175 @@ class BlogDetailScreen extends StatefulWidget {
 }
 
 class _BlogDetailScreenState extends State<BlogDetailScreen> {
-  double _textSize = 16.0; // Default text size
+  late InAppWebViewController webViewController;
+  String? htmlContent;
+  String? title;
+  String? published;
+  String? category;
+  int textSize = kInitialTextSize; // Current text size
 
-  Future<Map<String, String>> _fetchPostDetails() async {
+  Future<void> _fetchPostDetails() async {
     try {
       final response = await http.get(Uri.parse(widget.postUrl));
       if (response.statusCode == 200) {
         final document = XmlDocument.parse(response.body);
-        final title = document.findAllElements('title').first.text;
-        final published = document.findAllElements('published').first.text;
-        final category =
+        title = document.findAllElements('title').first.text;
+        published = document.findAllElements('published').first.text;
+        category =
             document.findAllElements('category').first.getAttribute('term') ??
                 'Không có';
-        final content = document
+        htmlContent = document
             .findAllElements('content')
             .first
             .text; // Get the HTML content
 
-        return {
-          'title': title,
-          'published': published,
-          'category': category,
-          'content': content,
-        };
+        setState(() {}); // Update the UI
       } else {
         throw Exception('Không thể tải bài viết.');
       }
     } catch (e) {
-      return {
-        'content': 'Không thể tải bài viết.',
-        'title': '',
-        'published': '',
-        'category': '',
-      };
+      setState(() {
+        htmlContent = '<h1>Không thể tải bài viết.</h1>'; // Fallback HTML
+      });
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    final themeProvider =
-        Provider.of<ThemeProvider>(context); // Get the theme provider
+  void initState() {
+    super.initState();
+    _fetchPostDetails(); // Fetch post details on init
+  }
 
+  Future<void> updateTextSize(int newSize) async {
+    textSize = newSize;
+
+    if (textSize < 10) textSize = 10; // Minimum text size
+    if (textSize > 200) textSize = 200; // Maximum text size
+
+    // Update text size for Android
+    await webViewController.setSettings(
+      settings: InAppWebViewSettings(textZoom: textSize),
+    );
+
+    // Update text size for iOS using JavaScript
+    await webViewController.evaluateJavascript(source: """
+      document.body.style.textSizeAdjust = '${textSize}%';
+      document.body.style.webkitTextSizeAdjust = '${textSize}%';
+    """);
+
+    // Update the User Script for the next page load
+    await webViewController.removeUserScript(userScript: textSizeUserScript);
+    textSizeUserScript.source =
+        kTextSizeSourceJS.replaceAll(kTextSizePlaceholder, '$textSize');
+    await webViewController.addUserScript(userScript: textSizeUserScript);
+  }
+
+  String _getHtmlWithTheme(String content) {
+    // Determine the current theme
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+
+    // Inject CSS for background color based on the theme
+    final backgroundColor =
+        isDarkTheme ? '#252833' : '#FFFFFF'; // Dark or light background
+    final textColor = isDarkTheme ? '#FFFFFF' : '#000000'; // Text color
+
+    return """
+    <html>
+      <head>
+      <meta content='text/html; charset=UTF-8' http-equiv='Content-Type'/>
+      <meta content='width=device-width, initial-scale=1' name='viewport'/>
+        <style>
+          body {
+            background-color: $backgroundColor;
+            color: $textColor;
+            font-size: ${textSize}%;
+          }
+          img {
+            max-width: 100%;
+            height: auto;
+          }
+          .title {
+            font-size: 24px;
+            font-weight: bold;
+          }
+          .meta {
+            color: grey;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="title">$title</div>
+        <div class="meta">Ngày đăng: $published</div>
+        <div class="meta">Chuyên mục: $category</div>
+        <div>$content</div>
+      </body>
+    </html>
+    """;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: FutureBuilder<Map<String, String>>(
-          future: _fetchPostDetails(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Text('Đang tải...');
-            } else if (snapshot.hasError) {
-              return Text('Lỗi: ${snapshot.error.toString()}');
-            } else {
-              final postDetails = snapshot.data;
-              return Text(postDetails?['title'] ?? '');
-            }
-          },
-        ),
+        title:
+            Text('${category?.isNotEmpty == true ? category : 'Đang tải...'}'),
         actions: [
           IconButton(
             icon: Icon(Icons.zoom_in),
-            onPressed: () {
-              setState(() {
-                _textSize += 2; // Increase text size
-              });
+            onPressed: () async {
+              await updateTextSize(textSize + 10); // Increase text size
             },
           ),
           IconButton(
             icon: Icon(Icons.zoom_out),
-            onPressed: () {
-              setState(() {
-                if (_textSize > 10) {
-                  _textSize -= 2; // Decrease text size
-                }
-              });
+            onPressed: () async {
+              await updateTextSize(textSize - 10); // Decrease text size
             },
+          ),
+          TextButton(
+            onPressed: () async {
+              await updateTextSize(kInitialTextSize); // Reset text size
+            },
+            child: const Text(
+              'Đặt lại',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
-      body: FutureBuilder<Map<String, String>>(
-        future: _fetchPostDetails(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text(snapshot.error.toString()));
-          } else {
-            final postDetails = snapshot.data;
-            return Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      postDetails?['title'] ?? '',
-                      style:
-                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Ngày đăng: ${postDetails?['published'] ?? ''}',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                    Text(
-                      'Chuyên mục: ${postDetails?['category'] ?? ''}',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                    SizedBox(height: 16),
-                    // Wrap HtmlWidget in a Container to avoid layout issues
-                    Container(
-                      child: HtmlWidget(
-                        postDetails?['content'] ?? '',
-                        textStyle: TextStyle(
-                          color: themeProvider.themeMode == ThemeMode.dark ||
-                                  themeProvider.themeMode == ThemeMode.system &&
-                                      MediaQuery.of(context)
-                                              .platformBrightness ==
-                                          Brightness.dark
-                              ? Colors.white // White text for dark mode
-                              : Colors.black, // Black text for light mode
-                          fontSize: _textSize, // Set dynamic text size
-                        ),
-                        customStylesBuilder: (element) {
-                          return {
-                            'background': 'transparent',
-                            'background-color':
-                                'transparent', // Remove background color
-                            // 'color': 'white', // Ensure text color is white
-                          };
-                        },
-                      ),
-                    ),
-                  ],
+      body: htmlContent == null
+          ? Center(child: CircularProgressIndicator())
+          : Container(
+              width: double.infinity,
+              height: double.infinity, // Full screen height
+              child: InAppWebView(
+                initialData: InAppWebViewInitialData(
+                  data: _getHtmlWithTheme(
+                      htmlContent!), // Inject theme-based HTML
+                  mimeType: "text/html",
+                  encoding: "utf-8",
+                  baseUrl: WebUri(widget.postUrl), // Convert to WebUri
                 ),
+                // Allow vertical scrolling within the web view
+                gestureRecognizers: Set()
+                  ..add(Factory<VerticalDragGestureRecognizer>(
+                      () => VerticalDragGestureRecognizer())),
+                initialUserScripts: UnmodifiableListView(
+                    !kIsWeb && defaultTargetPlatform == TargetPlatform.android
+                        ? []
+                        : [textSizeUserScript]),
+                onWebViewCreated: (InAppWebViewController controller) {
+                  webViewController = controller;
+                  updateTextSize(textSize); // Set initial zoom
+                },
+                onLoadError: (controller, url, code, message) {
+                  print("Error loading: $message");
+                },
+                onLoadHttpError: (controller, url, code, message) {
+                  print("HTTP Error: $message");
+                },
               ),
-            );
-          }
-        },
-      ),
+            ),
     );
   }
 }

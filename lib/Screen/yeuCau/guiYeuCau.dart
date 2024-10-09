@@ -58,14 +58,12 @@ class _InAppWebViewScreenState extends State<InAppWebViewScreen> {
               // Determine the background color based on the theme
               String backgroundColor;
               String textColor;
-              if (Theme.of(context).brightness == Brightness.dark ||
-                  Theme.of(context).brightness == Brightness.light) {
-                backgroundColor = '#252833';
+              if (Theme.of(context).brightness == Brightness.dark) {
+                backgroundColor = '#252833'; // Dark theme
                 textColor = 'white';
               } else {
-                backgroundColor =
-                    Theme.of(context).scaffoldBackgroundColor.toString();
-                textColor = 'black'; // Default text color for light theme
+                backgroundColor = 'white'; // Light theme
+                textColor = 'black';
               }
 
               // Inject CSS to hide specific elements before the content loads
