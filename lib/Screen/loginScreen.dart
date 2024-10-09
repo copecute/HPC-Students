@@ -145,7 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
       return LoginStatus.failure;
-    } on SocketException catch (e) {
+    } on SocketException {
       _showSnackBar('Không có kết nối internet. Vui lòng kiểm tra lại.');
       return LoginStatus.failure;
     } catch (e) {

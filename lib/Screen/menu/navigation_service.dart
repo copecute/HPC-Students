@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hpc_students/Screen/TraCuuDiemRenLuyenScreen.dart';
 import 'package:hpc_students/Screen/traCuuVanBang.dart';
-import 'package:hpc_students/Screen/veRaVao/traCuuRaVao.dart';
+import 'package:hpc_students/Screen/kiemSoatTruyCap/traCuuTruyCapScreen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:hpc_students/Screen/Blog/blogScreen.dart';
 import 'package:hpc_students/Screen/rankScreen.dart';
@@ -25,7 +25,7 @@ Future<void> handleNavigation(BuildContext context, int id) async {
     case 3:
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => TraCuuRaVao()),
+        MaterialPageRoute(builder: (context) => TraCuuTruyCapScreen()),
       );
       break;
     case 4:

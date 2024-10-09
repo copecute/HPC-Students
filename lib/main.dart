@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:hpc_students/Screen/traCuuHocPhiScreen.dart';
 import 'package:hpc_students/Screen/traCuuLichHocScreen.dart';
 import 'package:hpc_students/Screen/traDiemScreen.dart';
 import 'include/config.dart';
@@ -112,10 +111,8 @@ class _MainScreenState extends State<MainScreen> {
   // Danh sách các màn hình
   final List<Widget> _screens = [
     HomeScreen(), // Màn hình trang chủ
-    //LichHocScreen(),
     TraCuuLichHocScreen(), // Màn hình lịch học
     TraDiemScreen(), // Màn hình điểm rèn luyện
-    TraCuuHocPhiScreen(), // Màn hình học phí
     MenuScreen(), // Màn hình menu
   ];
 
@@ -142,10 +139,6 @@ class _MainScreenState extends State<MainScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.add_chart), // Biểu tượng điểm rèn luyện
             label: 'Kết quả học tập',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.monetization_on), // Biểu tượng học phí
-            label: 'Học phí',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.account_circle), // Biểu tượng hồ sơ

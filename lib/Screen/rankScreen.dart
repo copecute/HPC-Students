@@ -13,12 +13,6 @@ class _RankScreenState extends State<RankScreen> {
   List<Map<String, dynamic>> _rankList = [];
   bool _isLoading = true;
   bool _isDataFetched = false; // Add a flag to check if data is already fetched
-  String? _selectedCategory; // Variable to store the selected category
-  List<String> _categories = [
-    'All',
-    'Category 1',
-    'Category 2'
-  ]; // Example categories
 
   @override
   void initState() {
@@ -103,7 +97,7 @@ class _RankScreenState extends State<RankScreen> {
                 fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
           ),
           subtitle: Text(
-            'TBC: ${rankData['TBC']} | Trạng thái: ${rankData['Trangthai'] ? 'Đang học' : 'Ngừng học'}',
+            'Điểm TBC tích luỹ: ${rankData['TBC']}',
             style: TextStyle(fontSize: 16, color: Colors.white),
           ),
         ),
@@ -112,7 +106,7 @@ class _RankScreenState extends State<RankScreen> {
       // Top 2
       return Card(
         margin: EdgeInsets.all(10),
-        color: Colors.amber[300],
+        color: Colors.green[300],
         child: ListTile(
           leading: CircleAvatar(
             child: Text('🥈', style: TextStyle(fontSize: 24)),
@@ -120,11 +114,12 @@ class _RankScreenState extends State<RankScreen> {
           ),
           title: Text(
             rankData['fullname'],
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
           ),
           subtitle: Text(
-            'TBC: ${rankData['TBC']} | Trạng thái: ${rankData['Trangthai'] ? 'Đang học' : 'Ngừng học'}',
-            style: TextStyle(fontSize: 16),
+            'Điểm TBC tích luỹ: ${rankData['TBC']}',
+            style: TextStyle(fontSize: 16, color: Colors.white),
           ),
         ),
       );
@@ -132,7 +127,7 @@ class _RankScreenState extends State<RankScreen> {
       // Top 3
       return Card(
         margin: EdgeInsets.all(10),
-        color: Colors.brown[100],
+        color: Colors.blueGrey[300],
         child: ListTile(
           leading: CircleAvatar(
             child: Text('🥉', style: TextStyle(fontSize: 24)),
@@ -140,25 +135,31 @@ class _RankScreenState extends State<RankScreen> {
           ),
           title: Text(
             rankData['fullname'],
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
           ),
           subtitle: Text(
-            'TBC: ${rankData['TBC']} | Trạng thái: ${rankData['Trangthai'] ? 'Đang học' : 'Ngừng học'}',
-            style: TextStyle(fontSize: 16),
+            'Điểm TBC tích luỹ: ${rankData['TBC']}',
+            style: TextStyle(fontSize: 16, color: Colors.white),
           ),
         ),
       );
     } else {
       // Các vị trí khác
       return Card(
-        margin: EdgeInsets.all(10),
         child: ListTile(
+          leading: CircleAvatar(
+            child: Text('${index + 1}', style: TextStyle(fontSize: 16)),
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? Colors.grey[700] // Màu tối cho theme tối
+                : Colors.grey[300], // Màu sáng cho theme sáng
+          ),
           title: Text(
             rankData['fullname'],
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 20),
           ),
           subtitle: Text(
-            'TBC: ${rankData['TBC']} | Trạng thái: ${rankData['Trangthai'] ? 'Đang học' : 'Ngừng học'}',
+            'Điểm TBC tích luỹ: ${rankData['TBC']}',
             style: TextStyle(fontSize: 16),
           ),
         ),
