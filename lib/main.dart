@@ -4,16 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:hpc_students/Screen/traCuuHocPhiScreen.dart';
 import 'package:hpc_students/Screen/traCuuLichHocScreen.dart';
-import 'package:hpc_students/Screen/TraCuuDiemRenLuyenScreen.dart';
 import 'package:hpc_students/Screen/traDiemScreen.dart';
-import 'Screen/profile.dart';
 import 'include/config.dart';
 import 'package:provider/provider.dart';
 import 'include/cookie_provider.dart'; // Import CookieProvider
 import 'package:hpc_students/Screen/loginScreen.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart'; // Thư viện SharedPreferences
-import 'package:hpc_students/Screen/Blog/blogScreen.dart';
 import 'package:hpc_students/Screen/HomeScreen.dart';
 import 'package:hpc_students/Screen/menu/menuScreen.dart';
 import 'include/theme_provider.dart'; // Import ThemeProvider

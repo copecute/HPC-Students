@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:http/http.dart' as http; // Import http package
 import 'dart:convert'; // Import for json encoding

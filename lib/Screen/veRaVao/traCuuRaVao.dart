@@ -34,44 +34,44 @@ class _TraCuuRaVaoState extends State<TraCuuRaVao> {
         isLoading = true; // Bắt đầu loading
       });
 
-      if (tag.data != null) {
-        String nfcData = tag.data.toString();
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        String maSV = prefs.getString('username') ?? "";
+      String nfcData = tag.data.toString();
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String maSV = prefs.getString('username') ?? "";
 
-        DocumentReference docRef = FirebaseFirestore.instance.collection('AccessControl').doc(maSV);
-        DocumentSnapshot docSnapshot = await docRef.get();
+      DocumentReference docRef =
+          FirebaseFirestore.instance.collection('AccessControl').doc(maSV);
+      DocumentSnapshot docSnapshot = await docRef.get();
 
-        if (!docSnapshot.exists) {
-          await docRef.set({
-            'IO': true,
-            'data': nfcData,
-            'maSV': maSV,
-          });
-          _updateUI("Đỗ xe thành công", 'assets/AccessControl/Parked.svg');
+      if (!docSnapshot.exists) {
+        await docRef.set({
+          'IO': true,
+          'data': nfcData,
+          'maSV': maSV,
+        });
+        _updateUI("Đỗ xe thành công", 'assets/AccessControl/Parked.svg');
+      } else {
+        String existingData = docSnapshot['data'];
+        bool currentIO = docSnapshot['IO'];
+
+        if (existingData == nfcData) {
+          await docRef.update({'IO': !currentIO});
+          _updateUI(
+              currentIO ? "Lấy xe thành công" : "Đỗ xe thành công",
+              currentIO
+                  ? 'assets/AccessControl/GetCarSuccessfully.svg'
+                  : 'assets/AccessControl/Parked.svg');
         } else {
-          String existingData = docSnapshot['data'];
-          bool currentIO = docSnapshot['IO'];
-
-          if (existingData == nfcData) {
-            await docRef.update({'IO': !currentIO});
-            _updateUI(currentIO ? "Lấy xe thành công" : "Đỗ xe thành công", currentIO ? 'assets/AccessControl/GetCarSuccessfully.svg' : 'assets/AccessControl/Parked.svg');
+          if (!currentIO) {
+            await docRef.update({
+              'data': nfcData,
+              'IO': true,
+            });
+            _updateUI("Đỗ xe thành công", 'assets/AccessControl/Parked.svg');
           } else {
-            if (!currentIO) {
-              await docRef.update({
-                'data': nfcData,
-                'IO': true,
-              });
-              _updateUI("Đỗ xe thành công", 'assets/AccessControl/Parked.svg');
-            } else {
-              _updateUI("Thẻ không trùng khớp", 'assets/AccessControl/ParkingAccessDenied.svg');
-            }
+            _updateUI("Thẻ không trùng khớp",
+                'assets/AccessControl/ParkingAccessDenied.svg');
           }
         }
-      } else {
-        setState(() {
-          message = "Không tìm thấy dữ liệu trên thẻ.";
-        });
       }
 
       setState(() {
@@ -113,17 +113,17 @@ class _TraCuuRaVaoState extends State<TraCuuRaVao> {
                   isLoading
                       ? CircularProgressIndicator()
                       : Column(
-                    children: [
-                      SvgPicture.asset(imagePath),
-                      Text(
-                        message,
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                          children: [
+                            SvgPicture.asset(imagePath),
+                            Text(
+                              message,
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),

@@ -7,9 +7,9 @@ import 'package:hpc_students/include/cookie_provider.dart';
 import 'package:hpc_students/Screen/traCuuVanBang.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-// Import ThemeProvider
-
 import 'dart:io'; // Import dart:io for handling SocketException
+import 'dart:convert'; // Import dart:convert for JSON encoding/decoding
+import 'package:flutter/services.dart'; // Import for using platform channels
 
 enum LoginStatus { success, failure, redirect }
 
@@ -155,30 +155,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
-  }
-
-  void _showForgotPasswordDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text("Quên mật khẩu?"),
-          content: Text(
-              "Bước 1: bạn hãy chuẩn bị thẻ sinh viên\nBước 2: bạn hãy lên phòng hành chính để xin cấp lại mật khẩu"),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-              },
-              child: Text("Đóng"),
-            ),
-          ],
-        );
-      },
-    );
+    // Delay the snackbar display to ensure it appears above the dialog
+    Future.delayed(Duration(milliseconds: 100), () {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    });
   }
 
   void _showRegisterConfirmationDialog() {
@@ -207,7 +189,119 @@ class _LoginScreenState extends State<LoginScreen> {
                 }
                 Navigator.of(context).pop(); // Close the dialog
               },
-              child: Text("Đồng ý"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    const Color(0xFF2d59a4), // Match the login button color
+              ),
+              child: Text("Đăng ký"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showResetPasswordDialog() {
+    final TextEditingController _maSVController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Đặt lại mật khẩu"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _maSVController,
+                decoration: InputDecoration(hintText: "Mã sinh viên"),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text("Hủy"),
+            ),
+            ElevatedButton(
+              // Change to ElevatedButton for confirmation
+              onPressed: () async {
+                String maSV = _maSVController.text;
+                if (maSV.isNotEmpty) {
+                  // Call the reset password function
+                  await _resetPassword(maSV);
+                } else {
+                  _showAlertDialog('Vui lòng nhập mã sinh viên.');
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    const Color(0xFF2d59a4), // Match the login button color
+              ),
+              child: Text("Xác nhận"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _resetPassword(String maSV) async {
+    String url = '$baseUrl/DangNhap/ResetPassWord';
+    try {
+      var response = await http.post(
+        Uri.parse(url),
+        body: jsonEncode({'Ma_sv': maSV}),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        var result = jsonDecode(response.body);
+        switch (result.toString()) {
+          case "1":
+            _showAlertDialog('Bạn không có Email đăng ký với nhà trường!');
+            break;
+          case "2":
+            _showAlertDialog('Xin hãy truy cập Email để lấy lại mật khẩu!');
+            break;
+          case "3":
+            _showAlertDialog('Mã sinh viên bạn nhập không đúng!');
+            break;
+          case "4":
+            _showAlertDialog('Không có tài khoản sinh viên này!');
+            break;
+          case "5":
+            _showAlertDialog('Bạn không có quyền sử dụng chức năng này!');
+            break;
+          default:
+            _showAlertDialog('Có lỗi đã xảy ra!');
+            break;
+        }
+      } else {
+        _showAlertDialog('Có lỗi xảy ra khi kết nối đến máy chủ.');
+      }
+    } catch (e) {
+      _showAlertDialog('Đã xảy ra lỗi khi đặt lại mật khẩu.');
+    }
+  }
+
+  void _showAlertDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Thông báo"),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Đóng dialog
+              },
+              child: Text("OK"),
             ),
           ],
         );
@@ -235,6 +329,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   Image.asset(
                     "assets/icon.png", // Update with your new logo path
                     height: 100,
+                  ),
+                  SizedBox(height: 30),
+                  Text(
+                    "CỔNG THÔNG TIN SINH VIÊN",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   SizedBox(height: constraints.maxHeight * 0.1),
                   Form(
@@ -336,7 +438,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 16.0),
                         TextButton(
-                          onPressed: _showForgotPasswordDialog, // Show modal
+                          onPressed: _showResetPasswordDialog, // Show modal
                           child: Text(
                             'Quên mật khẩu?',
                             style: Theme.of(context)

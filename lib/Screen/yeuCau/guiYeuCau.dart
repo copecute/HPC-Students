@@ -198,7 +198,7 @@ class _InAppWebViewScreenState extends State<InAppWebViewScreen> {
             Container(
               color: Theme.of(context)
                   .colorScheme
-                  .background
+                  .surface
                   .withOpacity(1), // Background color based on theme
               child: Center(
                 child: CircularProgressIndicator(),

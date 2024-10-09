@@ -1,11 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'package:http/io_client.dart';
-import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:hpc_students/Screen/menu/avatar_service.dart'
-    hide fetchAvatarFromZalo, saveAvatarToFirebase; // Hide the functions
+// Hide the functions
 
 Future<void> saveAvatarToFirebase(
     String? avatarUrl, String dienThoai, String maSinhVien) async {

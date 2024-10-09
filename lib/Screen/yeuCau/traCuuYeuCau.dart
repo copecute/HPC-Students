@@ -49,6 +49,19 @@ class _TraCuuYeuCauScreenState extends State<TraCuuYeuCauScreen> {
         var document = htmlParser.parse(response.body);
         var rows =
             document.querySelectorAll("table tbody tr:not(.table-header)");
+        // Check if there's only one empty row
+        if (rows.length == 1 &&
+            rows[0]
+                .querySelectorAll("td")
+                .every((cell) => cell.text.trim().isEmpty)) {
+          setState(() {
+            _yeuCauData = []; // Clear the data
+            _isLoading = false; // Set loading to false
+          });
+          print("Không có yêu cầu nào"); // Print message for no requests
+          return; // Exit the method early
+        }
+
         _yeuCauData = rows.map((row) {
           var cells = row.querySelectorAll("td");
           var tieuDeElement =
@@ -150,117 +163,130 @@ class _TraCuuYeuCauScreenState extends State<TraCuuYeuCauScreen> {
           ),
         ],
       ),
-      body: ListView.builder(
-        controller: _scrollController, // Assign the ScrollController
-        itemCount: _yeuCauData.length + 1, // Add one for the pagination
-        itemBuilder: (context, index) {
-          if (index < _yeuCauData.length) {
-            var item = _yeuCauData[index];
-            return GestureDetector(
-              onTap: () {
-                // Use the extracted values directly
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ChiTietYeuCauScreen(
-                      id: item['id'] ?? '', // Use the extracted ID
-                      gui: item['gui'] ?? '2', // Use the extracted gui
-                      page: item['page'] ?? '1', // Use the extracted page
-                      hopthu: item['hopthu'] ??
-                          'TinGuiDi', // Use the extracted hopthu
+      body: _yeuCauData.isEmpty // Check if there are no requests
+          ? Center(
+              // Center the message
+              child: Column(
+                children: [
+                  SvgPicture.asset('assets/yeuCau/khong-co-yeu-cau.svg',
+                      width: MediaQuery.of(context).size.width,
+                      height: null,
+                      fit: BoxFit.cover),
+                  Text(
+                    'Bạn chưa gửi yêu cầu nào!', // Message to display
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                );
-              },
-              child: Card(
-                margin: EdgeInsets.all(8.0),
-                elevation: 4, // Add elevation for shadow effect
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10), // Rounded corners
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0), // Increased padding
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      /* Text(
-                        'STT: ${item['stt']}',
-                        style: TextStyle(
-                          fontSize: 16, // Increased font size
-                          fontWeight: FontWeight.bold, // Bold text
-                        ),
-                      ),
-                      SizedBox(height: 8), // Space between text
-                      */
-                      Text(
-                        '${item['tieuDe']}',
-                        style: TextStyle(
-                          fontSize: 20, // Increased font size
-                          fontWeight: FontWeight.bold, // Bold text
-                        ),
-                      ),
-                      SizedBox(height: 8), // Space between text
-                      Text(
-                        '${item['ngayGui']}',
-                        style: TextStyle(
-                          fontSize: 16, // Increased font size
-                          fontWeight: FontWeight.normal, // Normal text
-                        ),
-                      ),
-                      SizedBox(height: 8), // Space between text
-                      Text(
-                        'Người nhận: ${item['nguoiNhan']}',
-                        style: TextStyle(
-                          fontSize: 16, // Increased font size
-                          fontWeight: FontWeight.normal, // Normal text
-                        ),
-                      ),
-                      SizedBox(height: 8), // Space between text
-                      Text(
-                        'Trạng thái: ${item['hoanThanh']}',
-                        style: TextStyle(
-                          fontSize: 16, // Increased font size
-                          fontWeight: FontWeight.normal, // Normal text
-                        ),
-                      ),
-                      SizedBox(height: 8), // Space between text
-                      Text(
-                        'CB phản hồi: ${item['cbPhanHoi']}',
-                        style: TextStyle(
-                          fontSize: 16, // Increased font size
-                          fontWeight: FontWeight.normal, // Normal text
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                ],
               ),
-            );
-          } else {
-            return _totalPages > 1 // Check if total pages are greater than 1
-                ? Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.chevron_left),
-                        onPressed: _currentPage > 1
-                            ? () => _onPageChange(_currentPage - 1)
-                            : null,
+            )
+          : ListView.builder(
+              controller: _scrollController, // Assign the ScrollController
+              itemCount: _yeuCauData.length + 1, // Add one for the pagination
+              itemBuilder: (context, index) {
+                if (index < _yeuCauData.length) {
+                  var item = _yeuCauData[index];
+                  return GestureDetector(
+                    onTap: () {
+                      // Use the extracted values directly
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChiTietYeuCauScreen(
+                            id: item['id'] ?? '', // Use the extracted ID
+                            gui: item['gui'] ?? '2', // Use the extracted gui
+                            page: item['page'] ?? '1', // Use the extracted page
+                            hopthu: item['hopthu'] ??
+                                'TinGuiDi', // Use the extracted hopthu
+                          ),
+                        ),
+                      );
+                    },
+                    child: Card(
+                      margin: EdgeInsets.all(8.0),
+                      elevation: 4, // Add elevation for shadow effect
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(10), // Rounded corners
                       ),
-                      Text('Trang $_currentPage tổng $_totalPages'),
-                      IconButton(
-                        icon: Icon(Icons.chevron_right),
-                        onPressed: _currentPage < _totalPages
-                            ? () => _onPageChange(_currentPage + 1)
-                            : null,
+                      child: Padding(
+                        padding:
+                            const EdgeInsets.all(16.0), // Increased padding
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${item['tieuDe']}',
+                              style: TextStyle(
+                                fontSize: 20, // Increased font size
+                                fontWeight: FontWeight.bold, // Bold text
+                              ),
+                            ),
+                            SizedBox(height: 8), // Space between text
+                            Text(
+                              '${item['ngayGui']}',
+                              style: TextStyle(
+                                fontSize: 16, // Increased font size
+                                fontWeight: FontWeight.normal, // Normal text
+                              ),
+                            ),
+                            SizedBox(height: 8), // Space between text
+                            Text(
+                              'Người nhận: ${item['nguoiNhan']}',
+                              style: TextStyle(
+                                fontSize: 16, // Increased font size
+                                fontWeight: FontWeight.normal, // Normal text
+                              ),
+                            ),
+                            SizedBox(height: 8), // Space between text
+                            Text(
+                              'Trạng thái: ${item['hoanThanh']}',
+                              style: TextStyle(
+                                fontSize: 16, // Increased font size
+                                fontWeight: FontWeight.normal, // Normal text
+                              ),
+                            ),
+                            SizedBox(height: 8), // Space between text
+                            Text(
+                              'CB phản hồi: ${item['cbPhanHoi']}',
+                              style: TextStyle(
+                                fontSize: 16, // Increased font size
+                                fontWeight: FontWeight.normal, // Normal text
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ],
-                  )
-                : SizedBox
-                    .shrink(); // Return an empty widget if not enough pages
-          }
-        },
-      ),
+                    ),
+                  );
+                } else {
+                  return _totalPages >
+                          1 // Check if total pages are greater than 1
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            IconButton(
+                              icon: Icon(Icons.chevron_left),
+                              onPressed: _currentPage > 1
+                                  ? () => _onPageChange(_currentPage - 1)
+                                  : null,
+                            ),
+                            Text('Trang $_currentPage tổng $_totalPages'),
+                            IconButton(
+                              icon: Icon(Icons.chevron_right),
+                              onPressed: _currentPage < _totalPages
+                                  ? () => _onPageChange(_currentPage + 1)
+                                  : null,
+                            ),
+                          ],
+                        )
+                      : SizedBox
+                          .shrink(); // Return an empty widget if not enough pages
+                }
+              },
+            ),
     );
   }
 }

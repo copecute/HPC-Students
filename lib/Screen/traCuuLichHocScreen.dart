@@ -136,7 +136,7 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
       Uri.parse(url),
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Cookie': cookie!,
+        'Cookie': cookie,
       },
       body: postData,
     );
