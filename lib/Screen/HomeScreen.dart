@@ -1,4 +1,12 @@
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:html/parser.dart' as htmlParser;
+import 'package:xml/xml.dart';
+import 'package:provider/provider.dart';
+import 'package:http/io_client.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hpc_students/Screen/TraCuuDiemRenLuyenScreen.dart';
 import 'package:hpc_students/Screen/menu/menuScreen.dart';
 import 'package:hpc_students/Screen/rankScreen.dart';
@@ -7,21 +15,13 @@ import 'package:hpc_students/Screen/traCuuHocPhiScreen.dart';
 import 'package:hpc_students/Screen/traCuuLichHocScreen.dart';
 import 'package:hpc_students/Screen/traDiemScreen.dart';
 import 'package:hpc_students/include/theme_provider.dart';
-import 'package:provider/provider.dart';
-import 'package:http/io_client.dart';
-import 'dart:io';
-import 'package:html/parser.dart' as htmlParser;
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../include/cookie_provider.dart';
-import '../include/config.dart';
-import 'Blog/blogDetailScreen.dart';
-import 'Blog/blogScreen.dart'; // Import BlogScreen
-import 'loginScreen.dart';
-import 'package:http/http.dart' as http;
-import 'package:xml/xml.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Thư viện SharedPreferences
-
-import 'menu/navigation_service.dart'; // Import the fl_chart package
+import 'package:hpc_students/include/cookie_provider.dart';
+import 'package:hpc_students/include/config.dart';
+import 'package:hpc_students/Screen/Blog/blogDetailScreen.dart';
+import 'package:hpc_students/Screen/Blog/blogScreen.dart';
+import 'package:hpc_students/Screen/loginScreen.dart';
+import 'package:hpc_students/Screen/menu/navigation_service.dart';
+import 'dart:convert'; // Import for JSON encoding/decoding
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -41,11 +41,14 @@ class _HomeScreenState extends State<HomeScreen> {
   double _maxTbcValue = 10.0; // Maximum TBC value for comparison
   String _defaultImage =
       'https://blogger.googleusercontent.com/img/a/AVvXsEiYorgTwvKTp7bjT_1O6HrAl2K4vYEcimlyzfv-0UNwF8x_ov7avCHuZoVdg6K-u2GhL7bOUOmL9DSC4YiBQOF82bmOxYFhmzcd_S15-AikwfL83vmYIAPuBtCPGeRsRfAiVw0REdGk-GZltwNDSWuKC-WFGvU1WwUCASD8CynnsGpOH91geRjUW2rVmC0=w220-h146-p-k-no-nu'; // Default image URL
+  List<Map<String, String>> _cachedBlogPosts =
+      []; // Variable to hold cached blog posts
 
   @override
   void initState() {
     super.initState();
     _loadCachedData(); // Load dữ liệu từ cache
+    _loadCachedBlogPosts(); // Load cached blog posts
     _fetchBlogPosts(); // Fetch blog posts on initialization
   }
 
@@ -217,6 +220,9 @@ class _HomeScreenState extends State<HomeScreen> {
           _blogPosts = tempPosts; // Update the blog posts list
           _isLoading = false; // Reset loading state
         });
+
+        // Cache the fetched blog posts
+        await _cacheBlogPosts(tempPosts);
       } else {
         _showSnackBar('Không có kết nối internet. Vui lòng kiểm tra lại.');
         print('Error: ${response.statusCode}');
@@ -390,6 +396,26 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Load cached blog posts from SharedPreferences
+  Future<void> _loadCachedBlogPosts() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? cachedPosts = prefs.getString('cachedBlogPosts');
+    if (cachedPosts != null) {
+      setState(() {
+        _cachedBlogPosts =
+            List<Map<String, String>>.from(json.decode(cachedPosts));
+        _blogPosts = _cachedBlogPosts; // Set the blog posts to cached data
+      });
+    }
+  }
+
+  // Cache the blog posts to SharedPreferences
+  Future<void> _cacheBlogPosts(List<Map<String, String>> posts) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String encodedPosts = json.encode(posts);
+    await prefs.setString('cachedBlogPosts', encodedPosts);
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider =
@@ -555,117 +581,134 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
 
-                    // Danh sách tin tức theo chiều ngang
-                    Container(
-                      height: 150, // Chiều cao cố định cho phần tin tức
-                      child: _isLoading
-                          ? Center(
-                              child:
-                                  CircularProgressIndicator()) // Hiển thị loading khi dữ liệu đang được tải
-                          : ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: _blogPosts.length,
-                              itemBuilder: (context, index) {
-                                return Container(
-                                  width: 350, // Chiều rộng cố định cho mỗi Card
-                                  margin: EdgeInsets.symmetric(horizontal: 8),
-                                  child: Card(
-                                    elevation: 4,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: InkWell(
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                BlogDetailScreen(
-                                              postUrl: _blogPosts[index]
-                                                  ['self']!,
-                                            ),
+                    // Check if blog posts are loading
+                    _blogPosts.isEmpty && !_isLoading
+                        ? Center(child: CircularProgressIndicator())
+                        : Container(
+                            height: 150, // Chiều cao cố định cho phần tin tức
+                            child: _isLoading
+                                ? Center(
+                                    child:
+                                        CircularProgressIndicator()) // Hiển thị loading khi dữ liệu đang được tải
+                                : ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: _blogPosts.length,
+                                    itemBuilder: (context, index) {
+                                      return Container(
+                                        width:
+                                            350, // Chiều rộng cố định cho mỗi Card
+                                        margin:
+                                            EdgeInsets.symmetric(horizontal: 8),
+                                        child: Card(
+                                          elevation: 4,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(10),
                                           ),
-                                        );
-                                      },
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Row(
-                                          children: [
-                                            // Ảnh nằm bên trái
-                                            ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(8.0),
-                                              child: Image.network(
-                                                _blogPosts[index]['image'] ??
-                                                    '',
-                                                width:
-                                                    120, // Kích thước chiều rộng cố định
-                                                height:
-                                                    120, // Kích thước chiều cao cố định
-                                                fit: BoxFit.cover,
-                                              ),
-                                            ),
-                                            SizedBox(width: 10),
-                                            // Khoảng cách giữa ảnh và text
-                                            // Tiêu đề nằm bên phải
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  Text(
-                                                    _blogPosts[index]['title']!
-                                                                .length >
-                                                            50
-                                                        ? _blogPosts[index]
-                                                                    ['title']!
-                                                                .substring(
-                                                                    0, 50) +
-                                                            '...'
-                                                        : _blogPosts[index]
-                                                            ['title']!,
-                                                    style: TextStyle(
-                                                      fontSize: 18,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                    maxLines: 2,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
+                                          child: InkWell(
+                                            onTap: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      BlogDetailScreen(
+                                                    postUrl: _blogPosts[index]
+                                                        ['self']!,
                                                   ),
-                                                  Text(
-                                                    _blogPosts[index][
-                                                                    'category']!
-                                                                .length >
-                                                            50
-                                                        ? _blogPosts[index][
-                                                                    'category']!
-                                                                .substring(
-                                                                    0, 50) +
-                                                            '...'
-                                                        : _blogPosts[index]
-                                                            ['category']!,
-                                                    style: TextStyle(
-                                                      fontSize: 16,
+                                                ),
+                                              );
+                                            },
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.all(8.0),
+                                              child: Row(
+                                                children: [
+                                                  // Ảnh nằm bên trái
+                                                  ClipRRect(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8.0),
+                                                    child: Image.network(
+                                                      _blogPosts[index]
+                                                              ['image'] ??
+                                                          '',
+                                                      width:
+                                                          120, // Kích thước chiều rộng cố định
+                                                      height:
+                                                          120, // Kích thước chiều cao cố định
+                                                      fit: BoxFit.cover,
                                                     ),
-                                                    maxLines: 2,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                  SizedBox(width: 10),
+                                                  // Khoảng cách giữa ảnh và text
+                                                  // Tiêu đề nằm bên phải
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .center,
+                                                      children: [
+                                                        Text(
+                                                          _blogPosts[index][
+                                                                          'title']!
+                                                                      .length >
+                                                                  50
+                                                              ? _blogPosts[index]
+                                                                          [
+                                                                          'title']!
+                                                                      .substring(
+                                                                          0,
+                                                                          50) +
+                                                                  '...'
+                                                              : _blogPosts[
+                                                                      index]
+                                                                  ['title']!,
+                                                          style: TextStyle(
+                                                            fontSize: 18,
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                          ),
+                                                          maxLines: 2,
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                        ),
+                                                        Text(
+                                                          _blogPosts[index][
+                                                                          'category']!
+                                                                      .length >
+                                                                  50
+                                                              ? _blogPosts[index]
+                                                                          [
+                                                                          'category']!
+                                                                      .substring(
+                                                                          0,
+                                                                          50) +
+                                                                  '...'
+                                                              : _blogPosts[
+                                                                      index]
+                                                                  ['category']!,
+                                                          style: TextStyle(
+                                                            fontSize: 16,
+                                                          ),
+                                                          maxLines: 2,
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                        ),
+                                                      ],
+                                                    ),
                                                   ),
                                                 ],
                                               ),
                                             ),
-                                          ],
+                                          ),
                                         ),
-                                      ),
-                                    ),
+                                      );
+                                    },
                                   ),
-                                );
-                              },
-                            ),
-                    ),
+                          ),
                   ],
                 ),
               ),

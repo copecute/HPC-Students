@@ -37,6 +37,7 @@ dependencies:
   webview_flutter: ^4.9.0
   nfc_manager: ^3.5.0
   flutter_inappwebview: ^6.1.4
+  cached_network_image: ^3.4.1
 
 
 dev_dependencies:

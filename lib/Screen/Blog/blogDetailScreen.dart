@@ -3,10 +3,9 @@ import 'package:flutter/foundation.dart'; // Import for kIsWeb
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart';
-import 'package:provider/provider.dart';
-import 'package:hpc_students/include/theme_provider.dart'; // Import ThemeProvider
+// Import ThemeProvider
 import 'package:flutter_inappwebview/flutter_inappwebview.dart'; // Import InAppWebView
-import 'package:flutter/services.dart'; // Import for defaultTargetPlatform
+// Import for defaultTargetPlatform
 import 'package:flutter/gestures.dart'; // Import for VerticalDragGestureRecognizer
 
 const kInitialTextSize = 100; // Initial text size percentage
@@ -39,6 +38,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
   String? published;
   String? category;
   int textSize = kInitialTextSize; // Current text size
+  bool _isLoading = true; // Loading state
 
   Future<void> _fetchPostDetails() async {
     try {
@@ -55,13 +55,16 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
             .first
             .text; // Get the HTML content
 
-        setState(() {}); // Update the UI
+        setState(() {
+          _isLoading = false; // Set loading to false after fetching
+        }); // Update the UI
       } else {
         throw Exception('Không thể tải bài viết.');
       }
     } catch (e) {
       setState(() {
         htmlContent = '<h1>Không thể tải bài viết.</h1>'; // Fallback HTML
+        _isLoading = false; // Set loading to false on error
       });
     }
   }
@@ -115,10 +118,16 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
             background-color: $backgroundColor;
             color: $textColor;
             font-size: ${textSize}%;
+            max-width: 100%;
+            overflow-x: hidden;
+            font-family: 'Times New Roman', Times, serif;
           }
           img {
             max-width: 100%;
             height: auto;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
           }
           .title {
             font-size: 24px;
@@ -134,6 +143,40 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
         <div class="meta">Ngày đăng: $published</div>
         <div class="meta">Chuyên mục: $category</div>
         <div>$content</div>
+
+               <link href='https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css' rel='stylesheet'/>
+        <script src='https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js'></script>
+        <script src='https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js'></script>
+        <script>
+document.addEventListener("DOMContentLoaded", function() {
+  var images = document.querySelectorAll('img');
+  images.forEach(function(img) {
+    var img_link = img.getAttribute('src');
+    
+    // Tạo thẻ a để bọc img
+    var anchor = document.createElement('a');
+    anchor.setAttribute('href', img_link);
+    anchor.setAttribute('data-fancybox', 'gallery');
+  
+    // Chèn thẻ a vào trước img và bọc img bên trong a
+    img.parentNode.insertBefore(anchor, img);
+    anchor.appendChild(img);
+  });
+
+  // Lấy tất cả các thẻ .tr-caption-container
+  var captionContainers = document.querySelectorAll('.tr-caption-container');
+  captionContainers.forEach(function(container) {
+    var caption = container.querySelector('.tr-caption').textContent;
+    var anchor = container.querySelector('a');
+    
+    // Thêm data-caption vào thẻ a
+    if (anchor) {
+      anchor.setAttribute('data-caption', caption);
+    }
+  });
+});
+
+        </script>
       </body>
     </html>
     """;
@@ -146,31 +189,27 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
         title:
             Text('${category?.isNotEmpty == true ? category : 'Đang tải...'}'),
         actions: [
-          IconButton(
+          PopupMenuButton<int>(
             icon: Icon(Icons.zoom_in),
-            onPressed: () async {
-              await updateTextSize(textSize + 10); // Increase text size
+            onSelected: (value) {
+              if (value == 1) {
+                updateTextSize(textSize + 10); // Increase text size
+              } else if (value == 2) {
+                updateTextSize(textSize - 10); // Decrease text size
+              } else if (value == 3) {
+                updateTextSize(kInitialTextSize); // Reset text size
+              }
             },
-          ),
-          IconButton(
-            icon: Icon(Icons.zoom_out),
-            onPressed: () async {
-              await updateTextSize(textSize - 10); // Decrease text size
-            },
-          ),
-          TextButton(
-            onPressed: () async {
-              await updateTextSize(kInitialTextSize); // Reset text size
-            },
-            child: const Text(
-              'Đặt lại',
-              style: TextStyle(color: Colors.white),
-            ),
+            itemBuilder: (context) => [
+              PopupMenuItem(value: 1, child: Text('Phóng to')),
+              PopupMenuItem(value: 2, child: Text('Thu nhỏ')),
+              PopupMenuItem(value: 3, child: Text('Đặt lại')),
+            ],
           ),
         ],
       ),
-      body: htmlContent == null
-          ? Center(child: CircularProgressIndicator())
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator()) // Show loading indicator
           : Container(
               width: double.infinity,
               height: double.infinity, // Full screen height
@@ -199,6 +238,12 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
                 },
                 onLoadHttpError: (controller, url, code, message) {
                   print("HTTP Error: $message");
+                },
+                onLoadStop: (controller, url) async {
+                  setState(() {
+                    htmlContent =
+                        htmlContent; // Cập nhật lại htmlContent để tắt loading
+                  });
                 },
               ),
             ),
