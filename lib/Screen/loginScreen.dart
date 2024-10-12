@@ -5,6 +5,7 @@ import 'package:hpc_students/include/config.dart';
 import 'package:hpc_students/main.dart';
 import 'package:hpc_students/include/cookie_provider.dart';
 import 'package:hpc_students/Screen/traCuuVanBang.dart';
+import 'package:hpc_students/Screen/traCuuLichHocScreen.dart'; // Import the TraCuuLichHocScreen
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io'; // Import dart:io for handling SocketException
@@ -161,6 +162,40 @@ class _LoginScreenState extends State<LoginScreen> {
         SnackBar(content: Text(message)),
       );
     });
+  }
+
+  void _showCachedScheduleButton() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? cachedSchedule = prefs.getString('cachedSchedule');
+
+    if (cachedSchedule != null) {
+      // Directly navigate to the cached schedule screen
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) =>
+              TraCuuLichHocScreen(), // Navigate to the schedule screen
+        ),
+      );
+    }
+  }
+
+  // Add the button to view cached schedule
+  Widget _buildViewCachedScheduleButton() {
+    return FutureBuilder<String?>(
+      future: SharedPreferences.getInstance()
+          .then((prefs) => prefs.getString('cachedSchedule')),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(); // Show nothing while loading
+        } else if (snapshot.hasData && snapshot.data != null) {
+          return ElevatedButton(
+            onPressed: _showCachedScheduleButton,
+            child: Text("Xem lịch học đã lưu"),
+          );
+        }
+        return Container(); // Show nothing if no cached schedule
+      },
+    );
   }
 
   void _showRegisterConfirmationDialog() {
@@ -436,70 +471,70 @@ class _LoginScreenState extends State<LoginScreen> {
                                   : const Text(
                                       "Đăng nhập"), // Updated button text
                         ),
+
                         const SizedBox(height: 16.0),
-                        TextButton(
-                          onPressed: _showResetPasswordDialog, // Show modal
-                          child: Text(
-                            'Quên mật khẩu?',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  color: brightness == Brightness.dark
-                                      ? Colors
-                                          .white70 // Light text for dark theme
-                                      : Colors
-                                          .black54, // Dark text for light theme
-                                ),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed:
-                              _showRegisterConfirmationDialog, // Show confirmation dialog
-                          child: Text.rich(
-                            TextSpan(
-                              text: "Bạn không có tài khoản? ",
-                              children: [
-                                TextSpan(
-                                  text: "Đăng ký",
-                                  style: TextStyle(color: Color(0xFF00BF6D)),
-                                ),
-                              ],
+                        // Row for the two buttons
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            TextButton(
+                              onPressed: _showResetPasswordDialog, // Show modal
+                              child: Text(
+                                'Quên mật khẩu?',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .copyWith(
+                                      color: brightness == Brightness.dark
+                                          ? Colors
+                                              .white70 // Light text for dark theme
+                                          : Colors
+                                              .black54, // Dark text for light theme
+                                    ),
+                              ),
                             ),
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  color: brightness == Brightness.dark
-                                      ? Colors
-                                          .white70 // Light text for dark theme
-                                      : Colors
-                                          .black54, // Dark text for light theme
+                            TextButton(
+                              onPressed:
+                                  _showRegisterConfirmationDialog, // Show confirmation dialog
+                              child: Text.rich(
+                                TextSpan(
+                                  text: "Không có tài khoản? ",
+                                  children: [
+                                    TextSpan(
+                                      text: "Đăng ký",
+                                      style:
+                                          TextStyle(color: Color(0xFF00BF6D)),
+                                    ),
+                                  ],
                                 ),
-                          ),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .copyWith(
+                                      color: brightness == Brightness.dark
+                                          ? Colors
+                                              .white70 // Light text for dark theme
+                                          : Colors
+                                              .black54, // Dark text for light theme
+                                    ),
+                              ),
+                            ),
+                          ],
                         ),
+
                         const SizedBox(height: 16.0),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => TraCuuVanBangScreen()),
-                            );
-                          },
-                          child: Text(
-                            'Tra cứu văn bằng',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  color: brightness == Brightness.dark
-                                      ? Colors
-                                          .white70 // Light text for dark theme
-                                      : Colors
-                                          .black54, // Dark text for light theme
-                                ),
-                          ),
+                        _buildViewCachedScheduleButton(),
+                        const SizedBox(height: 16.0),
+                        Text(
+                          'Tra cứu văn bằng',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    color: brightness == Brightness.dark
+                                        ? Colors
+                                            .white70 // Light text for dark theme
+                                        : Colors
+                                            .black54, // Dark text for light theme
+                                  ),
                         ),
                       ],
                     ),

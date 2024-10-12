@@ -150,35 +150,36 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
       modifiedHtmlResponse = modifiedHtmlResponse.replaceAll(
         '<table',
         '''
-        <table style="width: 100%; border-collapse: collapse; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);"
+        <table style="width: 100%; border-collapse: collapse; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);  text-align: center; vertical-align: middle; "
         ''',
       );
 
       modifiedHtmlResponse = modifiedHtmlResponse.replaceAll(
         '<th scope="col"',
         '''
-        <th scope="col" style="border: 1px solid #ddd; padding: 12px; text-align: center; background: #2d58a3; color: white; font-weight: bold; font-size: 16px;"
+        <th scope="col" style="border: 1px solid #ddd; padding: 12px; text-align: center; background: #2d58a3; color: white; font-weight: bold; font-size: 16px;  text-align: center; vertical-align: middle; "
         ''',
       );
 
       modifiedHtmlResponse = modifiedHtmlResponse.replaceAll(
         '<td>',
         '''
-        <td style="border: 1px solid #ddd; padding: 10px; text-align: center; vertical-align: middle; background: unset;"
+        <td style="border: 1px solid #ddd; padding: 5px; text-align: center; vertical-align: middle; background: unset;"
         ''',
       );
 
       modifiedHtmlResponse = modifiedHtmlResponse.replaceAll(
         '<td style="',
         '''
-        <td style="border: 1px solid #ddd; padding: 10px; text-align: center; vertical-align: middle; background: unset; "
+        <td style="border: 1px solid #ddd; padding: 5px; text-align: center; vertical-align: middle; background: unset; "
         ''',
       );
 
       modifiedHtmlResponse = modifiedHtmlResponse.replaceAllMapped(
-        RegExp(r'<td rowspan="\d+" style="'),
+        RegExp(
+            r'<td rowspan="(\d+)" style="text-align:center;vertical-align:middle;font-weight:bold;background-color:(#[a-zA-Z0-9]+)">Học phần: (.*?)<br/>Lớp: (\d{2}\.\w+)<br/>Tên phòng: (.*?)<br/>GV: (.*?)</td>'),
         (match) =>
-            '<td rowspan="${match.group(0)!.split('"')[1]}" style="color:black;border: 1px solid #ddd; padding: 10px; text-align: center; vertical-align: middle; ',
+            '<td rowspan="${match.group(1)}" style="width: 100px;color:black;border: 1px solid #ddd; padding: 5px; text-align: center; vertical-align: middle;background-color:${match.group(2)}"><center><b>${match.group(3)}</b><br/>Phòng: ${match.group(5)}<br/>GV: ${match.group(6)}</center></td>',
       );
 
       modifiedHtmlResponse = modifiedHtmlResponse.replaceAll(
