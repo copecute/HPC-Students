@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'package:flutter/foundation.dart'; // Import for kIsWeb
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 import 'package:xml/xml.dart';
 // Import ThemeProvider
 import 'package:flutter_inappwebview/flutter_inappwebview.dart'; // Import InAppWebView
@@ -244,6 +245,15 @@ document.addEventListener("DOMContentLoaded", function() {
                     htmlContent =
                         htmlContent; // Cập nhật lại htmlContent để tắt loading
                   });
+                },
+                onLoadStart: (controller, url) async {
+                  // Open the URL in the external browser
+                  if (url != null && url.toString() != widget.postUrl) {
+                    controller.stopLoading();
+                    await launchUrl(Uri.parse(url
+                        .toString())); // Use the launch_url function to open the URL
+                    // Prevent the web view from loading the new URL
+                  }
                 },
               ),
             ),

@@ -43,13 +43,13 @@ class _HomeScreenState extends State<HomeScreen> {
       'https://blogger.googleusercontent.com/img/a/AVvXsEiYorgTwvKTp7bjT_1O6HrAl2K4vYEcimlyzfv-0UNwF8x_ov7avCHuZoVdg6K-u2GhL7bOUOmL9DSC4YiBQOF82bmOxYFhmzcd_S15-AikwfL83vmYIAPuBtCPGeRsRfAiVw0REdGk-GZltwNDSWuKC-WFGvU1WwUCASD8CynnsGpOH91geRjUW2rVmC0=w220-h146-p-k-no-nu'; // Default image URL
   List<Map<String, String>> _cachedBlogPosts =
       []; // Variable to hold cached blog posts
+  bool _hasFetchedData = false; // Flag to check if data has been fetched
 
   @override
   void initState() {
     super.initState();
     _loadCachedData(); // Load dữ liệu từ cache
     _loadCachedBlogPosts(); // Load cached blog posts
-    _fetchBlogPosts(); // Fetch blog posts on initialization
   }
 
   // Load dữ liệu từ SharedPreferences
@@ -164,8 +164,37 @@ class _HomeScreenState extends State<HomeScreen> {
     return _defaultImage; // Return default image if no thumbnail is found
   }
 
+  // Load cached blog posts from SharedPreferences
+  Future<void> _loadCachedBlogPosts() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? cachedPosts = prefs.getString('cachedBlogPosts');
+    if (cachedPosts != null) {
+      setState(() {
+        // Check if the cached data is XML or JSON
+        if (cachedPosts.trim().startsWith('<')) {
+          // Handle XML data
+          _blogPosts =
+              _parseXmlData(cachedPosts); // Call a new method to parse XML
+        } else {
+          // Handle JSON data
+          _blogPosts = List<Map<String, String>>.from(json
+              .decode(cachedPosts)
+              .map((post) => Map<String, String>.from(post)));
+        }
+        _hasFetchedData =
+            true; // Set the flag to true if cached data is available
+      });
+    } else {
+      // If no cached data, fetch from the server
+      _fetchBlogPosts();
+    }
+  }
+
   // Fetch blog posts similar to BlogScreen.dart
   Future<void> _fetchBlogPosts() async {
+    if (_hasFetchedData)
+      return; // Prevent fetching if data has already been fetched
+
     setState(() {
       _isLoading = true; // Set loading state
     });
@@ -175,6 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
+        // Parse the XML response
         final document = XmlDocument.parse(response.body);
         final entries = document.findAllElements('entry');
 
@@ -216,13 +246,14 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         }
 
+        // Cache the fetched blog posts in JSON format
+        await _cacheBlogPosts(tempPosts);
+
         setState(() {
           _blogPosts = tempPosts; // Update the blog posts list
           _isLoading = false; // Reset loading state
+          _hasFetchedData = true; // Set the flag to true after fetching
         });
-
-        // Cache the fetched blog posts
-        await _cacheBlogPosts(tempPosts);
       } else {
         _showSnackBar('Không có kết nối internet. Vui lòng kiểm tra lại.');
         print('Error: ${response.statusCode}');
@@ -237,6 +268,13 @@ class _HomeScreenState extends State<HomeScreen> {
         _isLoading = false; // Reset loading state on exception
       });
     }
+  }
+
+  // Cache the blog posts to SharedPreferences
+  Future<void> _cacheBlogPosts(List<Map<String, String>> posts) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String encodedPosts = json.encode(posts);
+    await prefs.setString('cachedBlogPosts', encodedPosts);
   }
 
   // Lưu dữ liệu vào SharedPreferences
@@ -396,24 +434,49 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Load cached blog posts from SharedPreferences
-  Future<void> _loadCachedBlogPosts() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? cachedPosts = prefs.getString('cachedBlogPosts');
-    if (cachedPosts != null) {
-      setState(() {
-        _cachedBlogPosts =
-            List<Map<String, String>>.from(json.decode(cachedPosts));
-        _blogPosts = _cachedBlogPosts; // Set the blog posts to cached data
-      });
-    }
-  }
+  // New method to parse XML data
+  List<Map<String, String>> _parseXmlData(String xmlString) {
+    final document = XmlDocument.parse(xmlString);
+    List<Map<String, String>> posts = [];
+    final entries =
+        document.findAllElements('entry'); // Adjust based on your XML structure
 
-  // Cache the blog posts to SharedPreferences
-  Future<void> _cacheBlogPosts(List<Map<String, String>> posts) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String encodedPosts = json.encode(posts);
-    await prefs.setString('cachedBlogPosts', encodedPosts);
+    for (var entry in entries) {
+      final title = entry.findElements('title').single.text;
+      final published = entry.findElements('published').single.text;
+      final category = entry
+          .findElements('category')
+          .firstWhere(
+            (link) =>
+                link.getAttribute('scheme') ==
+                'http://www.blogger.com/atom/ns#',
+            orElse: () => XmlElement(XmlName('category')),
+          )
+          .getAttribute('term');
+
+      final selfLink = entry
+          .findElements('link')
+          .firstWhere(
+            (link) => link.getAttribute('rel') == 'self',
+            orElse: () => XmlElement(XmlName('link')),
+          )
+          .getAttribute('href');
+
+      // Use the new _getThumbnail method to extract the image URL
+      final imageUrl = _getThumbnail(entry);
+
+      // Ensure selfLink is not null before adding it to the post data
+      if (selfLink != null) {
+        posts.add({
+          'title': title,
+          'published': published,
+          'category': category ?? "Mới",
+          'self': selfLink,
+          'image': imageUrl ?? _defaultImage,
+        });
+      }
+    }
+    return posts; // Return the parsed posts
   }
 
   @override
