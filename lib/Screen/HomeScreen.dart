@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:hpc_students/Screen/yeuCau/traCuuYeuCau.dart';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as htmlParser;
 import 'package:xml/xml.dart';
@@ -390,8 +391,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 MaterialPageRoute(builder: (context) => RankScreen()),
               );
               break;
-            case 'Vé ra vào':
-              showSnackBar(context, 'Chưa có chức năng này!');
+            case 'Quản lý yêu cầu':
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => TraCuuYeuCauScreen()),
+              );
               break;
             case 'Tất cả':
               Navigator.push(
@@ -603,7 +607,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           _buildCategoryItem(Icons.score, 'Điểm rèn luyện'),
                           _buildCategoryItem(Icons.favorite, 'Tìm người yêu'),
                           _buildCategoryItem(Icons.stars, 'HPC Ranking'),
-                          _buildCategoryItem(Icons.car_rental, 'Vé ra vào'),
+                          _buildCategoryItem(Icons.mark_email_unread_sharp, 'Quản lý yêu cầu'),
                           _buildCategoryItem(Icons.grid_view, 'Tất cả'),
                         ],
                       ),

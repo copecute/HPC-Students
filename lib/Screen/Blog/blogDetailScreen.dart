@@ -8,6 +8,7 @@ import 'package:xml/xml.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart'; // Import InAppWebView
 // Import for defaultTargetPlatform
 import 'package:flutter/gestures.dart'; // Import for VerticalDragGestureRecognizer
+import 'package:shared_preferences/shared_preferences.dart'; // Import SharedPreferences
 
 const kInitialTextSize = 100; // Initial text size percentage
 const kTextSizePlaceholder = 'TEXT_SIZE_PLACEHOLDER';
@@ -73,7 +74,32 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _loadTextSize(); // Load cached text size
     _fetchPostDetails(); // Fetch post details on init
+  }
+
+  // Load the cached text size from SharedPreferences
+  Future<void> _loadTextSize() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      textSize = prefs.getInt('textSize') ??
+          kInitialTextSize; // Default to initial size if not set
+    });
+  }
+
+  // Save the text size to SharedPreferences
+  Future<void> _saveTextSize(int newSize) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('textSize', newSize);
+  }
+
+  // Add a method to update the text size and cache it
+  void _updateTextSize(int newSize) {
+    setState(() {
+      textSize = newSize;
+    });
+    _saveTextSize(textSize); // Save the new text size
+    updateTextSize(textSize); // Update the web view text size
   }
 
   Future<void> updateTextSize(int newSize) async {
@@ -190,22 +216,20 @@ document.addEventListener("DOMContentLoaded", function() {
         title:
             Text('${category?.isNotEmpty == true ? category : 'Đang tải...'}'),
         actions: [
-          PopupMenuButton<int>(
+          IconButton(
             icon: Icon(Icons.zoom_in),
-            onSelected: (value) {
-              if (value == 1) {
-                updateTextSize(textSize + 10); // Increase text size
-              } else if (value == 2) {
-                updateTextSize(textSize - 10); // Decrease text size
-              } else if (value == 3) {
-                updateTextSize(kInitialTextSize); // Reset text size
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(value: 1, child: Text('Phóng to')),
-              PopupMenuItem(value: 2, child: Text('Thu nhỏ')),
-              PopupMenuItem(value: 3, child: Text('Đặt lại')),
-            ],
+            onPressed: () =>
+                _updateTextSize(textSize + 10), // Increase text size
+          ),
+          IconButton(
+            icon: Icon(Icons.zoom_out),
+            onPressed: () =>
+                _updateTextSize(textSize - 10), // Decrease text size
+          ),
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: () =>
+                _updateTextSize(kInitialTextSize), // Reset text size
           ),
         ],
       ),

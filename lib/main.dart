@@ -146,7 +146,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
         currentIndex: _selectedIndex,
-        selectedItemColor: Colors.blue,
+        selectedItemColor: Color(0xFF2d59a4),
         unselectedItemColor: Colors.grey, // Màu cho item không được chọn
         onTap: _onItemTapped, // Gọi hàm khi nhấn vào nút
       ),

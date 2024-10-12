@@ -100,13 +100,14 @@ class _TraCuuTruyCapScreenState extends State<TraCuuTruyCapScreen> {
                           SizedBox(
                               height:
                                   20), // Khoảng cách giữa hình ảnh và văn bản
-                          Text("Mã sinh viên: ${userData!['maSV']}",
+                          Text(
+                              "Mã sinh viên: ${userData?['maSV'] ?? 'N/A'}", // Add null check
                               style: TextStyle(fontSize: 20)),
                           Text(
-                              "Trạng thái: ${userData!['IO'] ? 'Đang đỗ xe' : 'Đã lấy xe'}",
+                              "Trạng thái: ${userData?['IO'] != null ? (userData!['IO'] ? 'Đang đỗ xe' : 'Đã lấy xe') : 'N/A'}", // Add null check
                               style: TextStyle(fontSize: 20)),
                           Text(
-                              "Thời gian: ${_formatTimestamp(userData!['timestamp'])}",
+                              "Thời gian: ${userData?['timestamp'] != null ? _formatTimestamp(userData!['timestamp']) : 'N/A'}", // Add null check
                               style: TextStyle(fontSize: 20)),
                         ],
                       ),
