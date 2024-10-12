@@ -39,9 +39,12 @@ class _MenuScreenState extends State<MenuScreen> {
   void initState() {
     super.initState();
     _loadData().then((_) {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        // Kiểm tra xem widget có còn tồn tại không
+        setState(() {
+          _isLoading = false;
+        });
+      }
     });
   }
 
@@ -68,27 +71,30 @@ class _MenuScreenState extends State<MenuScreen> {
 
     if (!forceRefresh && cachedHoTen != null && cachedDienThoai != null) {
       print("Using cached data: $_hoTen, $_dienThoai"); // Debugging line
-      setState(() {
-        _hoTen = cachedHoTen;
-        _dienThoai = cachedDienThoai;
-        _ngaySinh = cachedNgaySinh ?? '';
-        _gioiTinh = cachedGioiTinh ?? '';
-        _truongTHPT = cachedTruongTHPT ?? '';
-        _cmnd = cachedCmnd ?? '';
-        _avatarUrl = cachedAvatarUrl; // Use cached avatar URL
-        _tinh = cachedTinh ?? ''; // Use cached province
-        _huyen = cachedHuyen ?? ''; // Use cached district
-        _xa = cachedXa ?? ''; // Use cached commune
-        _chuyenNganh = cachedChuyenNganh ?? ''; // Use cached Chuyên ngành
-        _heDaoTao = cachedHeDaoTao ?? ''; // Use cached Hệ đào tạo
-        _khoaHoc = cachedKhoaHoc ?? ''; // Use cached Khóa học
-        _nienKhoa = cachedNienKhoa ?? ''; // Use cached Niên khóa
-        _danToc = cachedDanToc ?? ''; // Use cached Dân tộc
-        _quocTich = cachedQuocTich ?? ''; // Use cached Quốc tịch
-        _tonGiao = cachedTonGiao ?? ''; // Use cached Tôn giáo
-        _isFetched = true; // Mark data as fetched
-        _isLoading = false; // Set loading to false immediately
-      });
+      if (mounted) {
+        // Kiểm tra xem widget có còn tồn tại không
+        setState(() {
+          _hoTen = cachedHoTen;
+          _dienThoai = cachedDienThoai;
+          _ngaySinh = cachedNgaySinh ?? '';
+          _gioiTinh = cachedGioiTinh ?? '';
+          _truongTHPT = cachedTruongTHPT ?? '';
+          _cmnd = cachedCmnd ?? '';
+          _avatarUrl = cachedAvatarUrl; // Use cached avatar URL
+          _tinh = cachedTinh ?? ''; // Use cached province
+          _huyen = cachedHuyen ?? ''; // Use cached district
+          _xa = cachedXa ?? ''; // Use cached commune
+          _chuyenNganh = cachedChuyenNganh ?? ''; // Use cached Chuyên ngành
+          _heDaoTao = cachedHeDaoTao ?? ''; // Use cached Hệ đào tạo
+          _khoaHoc = cachedKhoaHoc ?? ''; // Use cached Khóa học
+          _nienKhoa = cachedNienKhoa ?? ''; // Use cached Niên khóa
+          _danToc = cachedDanToc ?? ''; // Use cached Dân tộc
+          _quocTich = cachedQuocTich ?? ''; // Use cached Quốc tịch
+          _tonGiao = cachedTonGiao ?? ''; // Use cached Tôn giáo
+          _isFetched = true; // Mark data as fetched
+          _isLoading = false; // Set loading to false immediately
+        });
+      }
       return; // Skip loading from the server
     }
 

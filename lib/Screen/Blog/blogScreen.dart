@@ -6,7 +6,7 @@ import 'blogDetailScreen.dart';
 import 'package:hpc_students/include/config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
-// Add this import for rootBundle
+// Thêm import này cho rootBundle
 
 class BlogScreen extends StatefulWidget {
   @override
@@ -23,76 +23,92 @@ class _BlogScreenState extends State<BlogScreen> {
   List<XmlElement> _filteredPosts = [];
   int _totalPages = 0;
   List<String> _categories = [];
-  String? _selectedCategory; // Variable to store the selected category
+  String? _selectedCategory; // Biến để lưu trữ danh mục đã chọn
   String _defaultImage =
-      'https://blogger.googleusercontent.com/img/a/AVvXsEiYorgTwvKTp7bjT_1O6HrAl2K4vYEcimlyzfv-0UNwF8x_ov7avCHuZoVdg6K-u2GhL7bOUOmL9DSC4YiBQOF82bmOxYFhmzcd_S15-AikwfL83vmYIAPuBtCPGeRsRfAiVw0REdGk-GZltwNDSWuKC-WFGvU1WwUCASD8CynnsGpOH91geRjUW2rVmC0=w220-h146-p-k-no-nu'; // Default image path
+      'https://blogger.googleusercontent.com/img/a/AVvXsEiYorgTwvKTp7bjT_1O6HrAl2K4vYEcimlyzfv-0UNwF8x_ov7avCHuZoVdg6K-u2GhL7bOUOmL9DSC4YiBQOF82bmOxYFhmzcd_S15-AikwfL83vmYIAPuBtCPGeRsRfAiVw0REdGk-GZltwNDSWuKC-WFGvU1WwUCASD8CynnsGpOH91geRjUW2rVmC0=w220-h146-p-k-no-nu'; // Đường dẫn hình ảnh mặc định
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  String _currentSearchQuery = ''; // Variable to store the current search query
+  String _currentSearchQuery = ''; // Biến để lưu trữ truy vấn tìm kiếm hiện tại
 
   @override
   void initState() {
     super.initState();
-    _loadData(); // Load data on initialization
-    _loadSearchQuery(); // Load the search query from SharedPreferences
+    _loadData(); // Tải dữ liệu khi khởi tạo
+    _loadSearchQuery(); // Tải truy vấn tìm kiếm từ SharedPreferences
   }
 
   Future<void> _loadSearchQuery() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? savedQuery =
-        prefs.getString('currentSearchQuery'); // Load saved search query
+        prefs.getString('currentSearchQuery'); // Tải truy vấn tìm kiếm đã lưu
     if (savedQuery != null) {
       setState(() {
-        _currentSearchQuery = savedQuery; // Set the current search query
+        _currentSearchQuery = savedQuery; // Đặt truy vấn tìm kiếm hiện tại
       });
       _fetchBlogPosts(
-          searchQuery: savedQuery); // Fetch posts based on the saved query
+          searchQuery: savedQuery); // Lấy bài viết dựa trên truy vấn đã lưu
     }
   }
 
   Future<void> _loadData() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? cachedData = prefs.getString('cachedBlogPosts'); // Load cached data
-    String? cachedCategories =
-        prefs.getString('cachedCategories'); // Load cached categories
+    print(
+        'Đang tải dữ liệu...'); // Ghi chú: Chỉ ra rằng việc tải dữ liệu đã bắt đầu
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? cachedData =
+          prefs.getString('cachedBlogPosts'); // Tải dữ liệu đã lưu
+      String? cachedCategories =
+          prefs.getString('cachedCategories'); // Tải danh mục đã lưu
 
-    if (cachedData != null) {
-      // If cached data exists, parse it and update the UI
-      try {
-        print('Cached Data: $cachedData'); // Log the cached data
-        final document = XmlDocument.parse(cachedData);
-        final entries = document.findAllElements('entry');
-        setState(() {
-          _posts = entries.toList();
-          _totalPosts = int.parse(
-              document.findAllElements('openSearch:totalResults').first.text);
-          _filteredPosts = _posts;
-          _totalPages = (_totalPosts / _postsPerPage).ceil();
-          _isLoading = false; // Set loading to false
-        });
-      } catch (e) {
-        print('Error parsing cached data: $e'); // Log the error
-        _isLoading = false; // Ensure loading is set to false
-        // Optionally, fetch fresh data if cached data is invalid
-        await _fetchBlogPosts();
+      if (cachedData != null) {
+        print(
+            'Đã tìm thấy dữ liệu đã lưu.'); // Ghi chú: Chỉ ra rằng dữ liệu đã lưu được tìm thấy
+        try {
+          print(
+              'Dữ liệu đã lưu: $cachedData'); // In ra dữ liệu đã lưu để kiểm tra
+          final document = XmlDocument.parse(cachedData); // Phân tích XML
+          final entries = document.findAllElements('entry');
+          setState(() {
+            _posts = entries.toList();
+            _totalPosts = int.parse(
+                document.findAllElements('openSearch:totalResults').first.text);
+            _filteredPosts = _posts;
+            _totalPages = (_totalPosts / _postsPerPage).ceil();
+            _isLoading =
+                false; // Đảm bảo trạng thái loading được đặt thành false sau khi tải dữ liệu đã lưu
+            print(
+                'Dữ liệu đã được tải thành công. Tổng số bài viết: $_totalPosts'); // Ghi chú: Chỉ ra việc tải dữ liệu thành công
+          });
+        } catch (e) {
+          print('Lỗi khi phân tích dữ liệu đã lưu: $e'); // Ghi lại lỗi
+          _isLoading = false; // Đảm bảo trạng thái loading được đặt thành false
+          await _fetchBlogPosts(); // Tùy chọn, lấy dữ liệu mới nếu dữ liệu đã lưu không hợp lệ
+        }
+      } else {
+        print(
+            'Không tìm thấy dữ liệu đã lưu. Đang lấy từ máy chủ...'); // Ghi chú: Chỉ ra rằng không có dữ liệu đã lưu
+        await _fetchBlogPosts(); // Nếu không có dữ liệu đã lưu, lấy từ máy chủ
       }
-    } else {
-      // If no cached data, fetch from the server
-      await _fetchBlogPosts();
-    }
 
-    if (cachedCategories != null) {
-      // If cached categories exist, parse and set them
+      if (cachedCategories != null) {
+        print(
+            'Đã tìm thấy danh mục đã lưu.'); // Ghi chú: Chỉ ra rằng danh mục đã lưu được tìm thấy
+        setState(() {
+          _categories = List<String>.from(
+              cachedCategories.split(',')); // Tải danh mục từ bộ nhớ cache
+        });
+      } else {
+        print(
+            'Không tìm thấy danh mục đã lưu. Đang lấy từ máy chủ...'); // Ghi chú: Chỉ ra rằng không có danh mục đã lưu
+        await _fetchCategories();
+        print('Đã tải danh mục!');
+      }
+    } catch (e) {
+      print(
+          'Lỗi khi tải dữ liệu: $e'); // Ghi lại bất kỳ lỗi nào xảy ra trong quá trình tải
       setState(() {
-        _categories = List<String>.from(
-            cachedCategories.split(',')); // Load categories from cache
-      });
-    } else {
-      // If no cached categories, fetch from the server
-      await _fetchCategories();
-      // Ensure the UI is updated after fetching categories
-      setState(() {
-        // This will trigger a rebuild to show the categories in the Drawer
+        _isLoading =
+            false; // Đảm bảo trạng thái loading được đặt thành false khi có lỗi
       });
     }
   }
@@ -103,40 +119,45 @@ class _BlogScreenState extends State<BlogScreen> {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final document = XmlDocument.parse(response.body);
-        // Get the list of categories
+        // Lấy danh sách các danh mục
         _categories = document
             .findAllElements('category')
-            .map((category) => category.getAttribute('term'))
-            .where((term) => term != null)
-            .map((term) => term!)
+            .where((category) =>
+                category.getAttribute('term') != null &&
+                category.getAttribute('scheme') ==
+                    null) // Lọc chỉ các chuyên mục không có scheme
+            .map((category) => category.getAttribute('term')!)
             .toList();
 
-        // Cache the categories
+        // Lưu danh mục vào bộ nhớ cache
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString(
-            'cachedCategories', _categories.join(',')); // Save to cache
+            'cachedCategories', _categories.join(',')); // Lưu vào bộ nhớ cache
+
+        // Cập nhật lại trạng thái để hiển thị danh mục
+        setState(() {});
       }
     } catch (e) {
-      print('Error fetching categories: $e');
+      print('Lỗi khi lấy danh mục: $e');
     }
   }
 
   Future<void> _fetchBlogPosts({String? category, String? searchQuery}) async {
     setState(() {
-      _isLoading = true;
+      _isLoading = true; // Đặt trạng thái loading
     });
 
-    // Build URL
+    // Xây dựng URL
     String url = 'https://www.blogger.com/feeds/$blogID/posts/default';
 
     if (category != null && category != 'Tất cả bài viết') {
       url += '/-/${Uri.encodeComponent(category)}';
-      _selectedCategory = category; // Store the selected category
+      _selectedCategory = category; // Lưu trữ danh mục đã chọn
     }
 
     if (searchQuery != null && searchQuery.isNotEmpty) {
       url +=
-          '?q=${Uri.encodeComponent(searchQuery)}&max-results=$_postsPerPage'; // Update the URL for search
+          '?q=${Uri.encodeComponent(searchQuery)}&max-results=$_postsPerPage'; // Cập nhật URL cho tìm kiếm
     } else {
       url +=
           '?max-results=$_postsPerPage&start-index=${(_currentPage - 1) * _postsPerPage + 1}';
@@ -148,27 +169,30 @@ class _BlogScreenState extends State<BlogScreen> {
         final document = XmlDocument.parse(response.body);
         final entries = document.findAllElements('entry');
 
-        setState(() async {
+        // Di chuyển cuộc gọi setState ra ngoài hoạt động async
+        setState(() {
           _posts = entries.toList();
           _totalPosts = int.parse(
               document.findAllElements('openSearch:totalResults').first.text);
           _filteredPosts = _posts;
           _totalPages = (_totalPosts / _postsPerPage).ceil();
+        });
 
-          // Debugging: Print the number of posts and their titles
-          print('Total Posts: $_totalPosts');
-          for (var entry in entries) {
-            final title = entry.findElements('title').single.text;
-            print('Post Title: $title');
-          }
+        // Ghi chú: In ra số lượng bài viết và tiêu đề của chúng
+        print('Tổng số bài viết: $_totalPosts');
+        for (var entry in entries) {
+          final title = entry.findElements('title').single.text;
+        }
 
-          // Cache the data
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          await prefs.setString(
-              'cachedBlogPosts', response.body); // Save to cache
-          await prefs.setString('currentSearchQuery',
-              searchQuery ?? ''); // Save the current search query
+        // Lưu dữ liệu vào bộ nhớ cache
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+            'cachedBlogPosts', response.body); // Lưu vào bộ nhớ cache
+        await prefs.setString('currentSearchQuery',
+            searchQuery ?? ''); // Lưu truy vấn tìm kiếm hiện tại
 
+        // Đặt trạng thái loading thành false sau khi dữ liệu được lấy
+        setState(() {
           _isLoading = false;
         });
       } else {
@@ -176,14 +200,15 @@ class _BlogScreenState extends State<BlogScreen> {
       }
     } catch (e) {
       setState(() {
-        _isLoading = false;
+        _isLoading =
+            false; // Đảm bảo trạng thái loading được đặt thành false khi có lỗi
       });
-      print('Error fetching blog posts: $e');
+      print('Lỗi khi lấy bài viết: $e');
     }
   }
 
   Future<void> refreshData() async {
-    await _fetchBlogPosts(); // Fetch data again
+    await _fetchBlogPosts(); // Lấy dữ liệu lại
   }
 
   void _nextPage() {
@@ -192,8 +217,7 @@ class _BlogScreenState extends State<BlogScreen> {
         _currentPage++;
         _isLoading = true;
       });
-      _fetchBlogPosts(
-          category: _selectedCategory); // Pass the selected category
+      _fetchBlogPosts(category: _selectedCategory); // Truyền danh mục đã chọn
     }
   }
 
@@ -203,8 +227,7 @@ class _BlogScreenState extends State<BlogScreen> {
         _currentPage--;
         _isLoading = true;
       });
-      _fetchBlogPosts(
-          category: _selectedCategory); // Pass the selected category
+      _fetchBlogPosts(category: _selectedCategory); // Truyền danh mục đã chọn
     }
   }
 
@@ -214,8 +237,8 @@ class _BlogScreenState extends State<BlogScreen> {
       key: _scaffoldKey,
       appBar: AppBar(
         title: Text(_currentSearchQuery.isNotEmpty
-            ? 'Tìm kiếm: $_currentSearchQuery' // Display the search query if available
-            : 'Bài viết'), // Default title
+            ? 'Tìm kiếm: $_currentSearchQuery' // Hiển thị truy vấn tìm kiếm nếu có
+            : 'Bài viết'), // Tiêu đề mặc định
         actions: [
           IconButton(
             icon: Icon(Icons.search),
@@ -227,14 +250,12 @@ class _BlogScreenState extends State<BlogScreen> {
                   onSearch: (query) {
                     setState(() {
                       _currentSearchQuery =
-                          query; // Update the current search query
+                          query; // Cập nhật truy vấn tìm kiếm hiện tại
                     });
                     _fetchBlogPosts(
-                        searchQuery:
-                            query); // Call the function with the search query
+                        searchQuery: query); // Gọi hàm với truy vấn tìm kiếm
                   },
-                  categories:
-                      _categories, // Pass the categories to the delegate
+                  categories: _categories, // Truyền danh mục cho delegate
                 ),
               );
             },
@@ -243,7 +264,7 @@ class _BlogScreenState extends State<BlogScreen> {
             icon: Icon(Icons.menu),
             onPressed: () {
               _scaffoldKey.currentState
-                  ?.openEndDrawer(); // Use the key to open the drawer
+                  ?.openEndDrawer(); // Sử dụng key để mở drawer
             },
           ),
         ],
@@ -264,15 +285,15 @@ class _BlogScreenState extends State<BlogScreen> {
               ),
             ),
             ListTile(
-              title: Text('Tất cả bài viết'), // All Posts item
+              title: Text('Tất cả bài viết'), // Mục Tất cả bài viết
               onTap: () {
                 setState(() {
-                  _currentSearchQuery = ''; // Clear the search query
-                  _selectedCategory = null; // Clear the selected category
-                  _currentPage = 1; // Reset to the first page
+                  _currentSearchQuery = ''; // Xóa truy vấn tìm kiếm
+                  _selectedCategory = null; // Xóa danh mục đã chọn
+                  _currentPage = 1; // Đặt lại về trang đầu tiên
                 });
-                _fetchBlogPosts(); // Fetch all posts
-                Navigator.pop(context); // Close the drawer
+                _fetchBlogPosts(); // Lấy tất cả bài viết
+                Navigator.pop(context); // Đóng drawer
               },
             ),
             ..._categories.map((category) {
@@ -281,14 +302,13 @@ class _BlogScreenState extends State<BlogScreen> {
                 onTap: () {
                   setState(() {
                     _currentPage =
-                        1; // Reset to the first page when a new category is selected
-                    _selectedCategory = category; // Set the selected category
-                    _currentSearchQuery = ''; // Clear the search query
+                        1; // Đặt lại về trang đầu tiên khi chọn danh mục mới
+                    _selectedCategory = category; // Đặt danh mục đã chọn
+                    _currentSearchQuery = ''; // Xóa truy vấn tìm kiếm
                   });
                   _fetchBlogPosts(
-                      category:
-                          category); // Fetch posts for the selected category
-                  Navigator.pop(context); // Close the drawer
+                      category: category); // Lấy bài viết cho danh mục đã chọn
+                  Navigator.pop(context); // Đóng drawer
                 },
               );
             }).toList(),
@@ -299,10 +319,10 @@ class _BlogScreenState extends State<BlogScreen> {
         children: [
           Expanded(
             child: RefreshIndicator(
-              onRefresh: refreshData, // Call refreshData when pulled down
+              onRefresh: refreshData, // Gọi refreshData khi kéo xuống
               child: _isLoading
                   ? Center(child: CircularProgressIndicator())
-                  : _posts.isEmpty // Check if there are no posts
+                  : _posts.isEmpty // Kiểm tra xem có bài viết nào không
                       ? Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -394,7 +414,7 @@ class _BlogScreenState extends State<BlogScreen> {
                                 ),
                               );
                             }).toList(),
-                            // Pagination controls
+                            // Điều khiển phân trang
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -432,32 +452,32 @@ class _BlogScreenState extends State<BlogScreen> {
       return match.group(1);
     }
 
-    return _defaultImage; // Return default image if no thumbnail is found
+    return _defaultImage; // Trả về hình ảnh mặc định nếu không tìm thấy thumbnail
   }
 }
 
 class BlogSearchDelegate extends SearchDelegate<String> {
   final TextEditingController searchController;
   final Function(String) onSearch;
-  final List<String> categories; // Add a parameter for categories
+  final List<String> categories; // Thêm tham số cho danh mục
 
   BlogSearchDelegate({
     required this.searchController,
     required this.onSearch,
-    required this.categories, // Initialize categories
+    required this.categories, // Khởi tạo danh mục
   });
 
   @override
-  String get searchFieldLabel => 'Tìm kiếm...'; // Change the search field label
+  String get searchFieldLabel => 'Tìm kiếm...'; // Thay đổi nhãn ô tìm kiếm
 
   @override
   Widget buildSuggestions(BuildContext context) {
-    // Check if there are categories available
+    // Kiểm tra xem có danh mục nào không
     if (categories.isEmpty) {
-      return Container(); // Return an empty container if no categories
+      return Container(); // Trả về container rỗng nếu không có danh mục
     }
 
-    // Randomly select up to 5 categories, allowing for repetition
+    // Ngẫu nhiên chọn tối đa 5 danh mục, cho phép lặp lại
     final List<String> randomSuggestions = [];
     final random = Random();
 
@@ -477,7 +497,8 @@ class BlogSearchDelegate extends SearchDelegate<String> {
           onTap: () {
             searchController.text =
                 suggestion; // Đặt từ khóa đã chọn vào controller
-            onSearch(suggestion); // Gọi hàm tìm kiếm với từ khóa đã chọn
+            // Gọi hàm tìm kiếm với từ khóa đã chọn sau khi đóng hộp thoại
+            Future.microtask(() => onSearch(suggestion));
             close(context, suggestion); // Đóng hộp thoại tìm kiếm
           },
         );
@@ -488,7 +509,7 @@ class BlogSearchDelegate extends SearchDelegate<String> {
   @override
   Widget buildResults(BuildContext context) {
     // Gọi hàm tìm kiếm với từ khóa đã nhập và đóng hộp thoại tìm kiếm
-    onSearch(query); // Call the search function with the query
+    Future.microtask(() => onSearch(query)); // Gọi hàm tìm kiếm với truy vấn
     close(context, query); // Đóng hộp thoại tìm kiếm
     return Container(); // Không cần trả về gì ở đây
   }
@@ -516,7 +537,8 @@ class BlogSearchDelegate extends SearchDelegate<String> {
       IconButton(
         icon: Icon(Icons.search),
         onPressed: () {
-          onSearch(query); // Thực hiện tìm kiếm khi nhấn nút
+          Future.microtask(
+              () => onSearch(query)); // Thực hiện tìm kiếm khi nhấn nút
           close(context, query); // Đóng hộp thoại tìm kiếm
         },
       ),

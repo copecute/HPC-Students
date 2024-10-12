@@ -145,9 +145,8 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
             background-color: $backgroundColor;
             color: $textColor;
             font-size: ${textSize}%;
-            max-width: 100%;
-            overflow-x: hidden;
-            font-family: 'Times New Roman', Times, serif;
+            max-width: 100vw; /* Đảm bảo trang không rộng hơn màn hình */
+            overflow-x: hidden; /* Không cho phép tràn ngang */
           }
           img {
             max-width: 100%;
@@ -163,12 +162,73 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
           .meta {
             color: grey;
           }
+        * {
+        outline:0;
+        transition:all .0s ease;
+        -webkit-transition:all .0s ease;
+        -moz-transition:all .0s ease;
+        -o-transition:all .0s ease
+        }
+        *,:before,:after {
+        -webkit-box-sizing:border-box;
+        -moz-box-sizing:border-box;
+        box-sizing:border-box
+        }
+        a,abbr,acronym,address,applet,b,big,blockquote,caption,center,cite,code,dd,del,dfn,div,dl,dt,em,fieldset,font,form,h1,h2,h3,h4,h5,h6,html,i,iframe,img,ins,kbd,label,legend,li,object,p,pre,q,s,samp,small,span,strike,strong,sub,sup,table,tbody,td,tfoot,th,thead,tr,tt,u,ul,var {
+        padding:0;
+        border:0;
+        outline:0;
+        vertical-align:baseline;
+        }
+        ins {
+        text-decoration:underline
+        }
+        del {
+        text-decoration:line-through
+        }
+        blockquote {
+        background-color: $backgroundColor!important;
+        color: $textColor!important;
+        }
+        dl,ul {
+        list-style-position:inside;
+        font-weight:700;
+        list-style:none
+        }
+        ul li {
+        list-style:none
+        }
+        caption,th {
+        text-align:center
+        }
+
+        a,a:visited {
+        text-decoration:none;
+        font-weight:400
+        }
+        a {
+        color:#0094da
+        }
+        a:hover {
+        color:#0093da
+        }
+        q:after,q:before {
+        content:''
+        }
+        p {
+        margin:0
+        }
+        abbr,acronym {
+        border:0
+        }
+
         </style>
       </head>
       <body>
         <div class="title">$title</div>
         <div class="meta">Ngày đăng: $published</div>
         <div class="meta">Chuyên mục: $category</div>
+        <br />
         <div>$content</div>
 
                <link href='https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css' rel='stylesheet'/>

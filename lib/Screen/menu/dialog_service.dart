@@ -23,9 +23,13 @@ void showLogoutConfirmationDialog(BuildContext context) {
               await prefs.remove('username');
               await prefs.remove('password');
               await prefs.clear(); // Clear all cached data on logout
-              Navigator.of(context, rootNavigator: true).pushReplacement(
-                MaterialPageRoute(builder: (context) => LoginScreen()),
-              );
+
+              // Kiểm tra xem widget có còn tồn tại không trước khi điều hướng
+              if (context.mounted) {
+                Navigator.of(context, rootNavigator: true).pushReplacement(
+                  MaterialPageRoute(builder: (context) => LoginScreen()),
+                );
+              }
             },
             child: Text('Có'),
           ),

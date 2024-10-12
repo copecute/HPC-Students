@@ -71,6 +71,7 @@ Future<void> loadData(
       print("Data loaded successfully.");
       var document = htmlParser.parse(response.body);
 
+      // Không cần kiểm tra mounted ở đây
       setState(() {
         String hoTen =
             document.getElementById("Ho_ten")?.attributes['value'] ?? '';
@@ -170,11 +171,11 @@ Future<void> loadData(
           setAvatarUrl, setIsLoading, setIsFetched);
     } else {
       print("Failed to load data, status code: ${response.statusCode}");
-      setIsLoading(false);
+      setIsLoading(false); // Không cần kiểm tra mounted ở đây
     }
   } catch (e) {
     print("Error loading data: $e");
-    setIsLoading(false);
+    setIsLoading(false); // Không cần kiểm tra mounted ở đây
   } finally {
     ioClient.close();
   }
@@ -267,6 +268,6 @@ Future<void> checkFirebaseForAvatar(
     }
   } catch (e) {
     print("Error checking Firestore: $e");
-    setIsLoading(false);
+    setIsLoading(false); // Không cần kiểm tra mounted ở đây
   }
 }

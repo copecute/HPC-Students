@@ -221,7 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     'http://www.blogger.com/atom/ns#',
                 orElse: () => XmlElement(XmlName('category')),
               )
-              .getAttribute('term'); // Get the category
+              .getAttribute('term');
 
           final selfLink = entry
               .findElements('link')
@@ -229,7 +229,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 (link) => link.getAttribute('rel') == 'self',
                 orElse: () => XmlElement(XmlName('link')),
               )
-              .getAttribute('href'); // Get the selfLink
+              .getAttribute('href');
 
           // Use the new _getThumbnail method to extract the image URL
           final imageUrl = _getThumbnail(entry);
@@ -240,9 +240,8 @@ class _HomeScreenState extends State<HomeScreen> {
               'title': title,
               'published': published,
               'category': category ?? "Mới",
-              'self': selfLink, // Add selfLink to the post data
-              'image':
-                  imageUrl ?? _defaultImage, // Use the new method for image URL
+              'self': selfLink,
+              'image': imageUrl ?? _defaultImage,
             });
           }
         }
@@ -433,9 +432,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    if (mounted) {
+      // Kiểm tra xem widget có còn tồn tại không
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
   }
 
   // New method to parse XML data
@@ -607,7 +609,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           _buildCategoryItem(Icons.score, 'Điểm rèn luyện'),
                           _buildCategoryItem(Icons.favorite, 'Tìm người yêu'),
                           _buildCategoryItem(Icons.stars, 'HPC Ranking'),
-                          _buildCategoryItem(Icons.mark_email_unread_sharp, 'Quản lý yêu cầu'),
+                          _buildCategoryItem(
+                              Icons.mark_email_unread_sharp, 'Quản lý yêu cầu'),
                           _buildCategoryItem(Icons.grid_view, 'Tất cả'),
                         ],
                       ),
