@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart'; // Thư viện Shar
 import 'package:hpc_students/Screen/HomeScreen.dart';
 import 'package:hpc_students/Screen/menu/menuScreen.dart';
 import 'include/theme_provider.dart'; // Import ThemeProvider
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Ensure binding is initialized
@@ -46,6 +47,17 @@ class MyApp extends StatelessWidget {
       theme: themeProvider.lightTheme, // Light theme
       darkTheme: themeProvider.darkTheme, // Dark theme
       themeMode: themeProvider.themeMode, // Set the theme mode
+      // Locale tự động nhận diện từ ngôn ngữ hệ thống
+      locale: WidgetsBinding.instance.window.locale,
+      supportedLocales: [
+        const Locale('en', 'US'), // Tiếng Anh
+        const Locale('vi', 'VN'), // Tiếng Việt
+      ],
+      localizationsDelegates: [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       home: FutureBuilder(
         future:
             _mockCheckLoginStatus(), // Use a mock future that delays the check
