@@ -6,7 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:hpc_students/Screen/Blog/blogScreen.dart';
 import 'package:hpc_students/Screen/rankScreen.dart';
 import 'package:hpc_students/Screen/traCuuHocPhiScreen.dart';
-import 'package:hpc_students/Screen/traCuuLichHocScreen.dart';
+import 'package:hpc_students/Screen/lichHoc/traCuuLichHocScreen.dart';
 import 'package:hpc_students/Screen/traDiemScreen.dart';
 import 'package:hpc_students/Screen/timNguoiYeu/chat.dart';
 import 'package:shared_preferences/shared_preferences.dart';

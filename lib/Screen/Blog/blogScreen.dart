@@ -508,10 +508,12 @@ class BlogSearchDelegate extends SearchDelegate<String> {
 
   @override
   Widget buildResults(BuildContext context) {
-    // Gọi hàm tìm kiếm với từ khóa đã nhập và đóng hộp thoại tìm kiếm
-    Future.microtask(() => onSearch(query)); // Gọi hàm tìm kiếm với truy vấn
-    close(context, query); // Đóng hộp thoại tìm kiếm
-    return Container(); // Không cần trả về gì ở đây
+    // Schedule the search call to be executed after the current frame
+    Future.microtask(() {
+      onSearch(query); // Call the search function
+      close(context, query); // Close the search dialog
+    });
+    return Container(); // No need to return anything here
   }
 
   @override

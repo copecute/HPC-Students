@@ -37,10 +37,17 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
   Future<void> _loadCachedSchedule() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? cachedHtmlResponse = prefs.getString('cachedSchedule');
+    String? cachedSelectedWeek =
+        prefs.getString('cachedSelectedWeek'); // Load cached week text
     if (cachedHtmlResponse != null) {
       setState(() {
         htmlResponse = cachedHtmlResponse;
         isLoadingSchedule = false;
+      });
+    }
+    if (cachedSelectedWeek != null) {
+      setState(() {
+        selectedWeek = cachedSelectedWeek; // Set the cached week text
       });
     }
   }
@@ -100,6 +107,10 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
         setState(() {
           selectedWeek = week['value'];
         });
+
+        // Cache the selected week text
+        _cacheSelectedWeekText(weekText);
+
         break;
       }
     }
@@ -107,6 +118,12 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
     if (selectedWeek != null) {
       fetchSchedule();
     }
+  }
+
+  Future<void> _cacheSelectedWeekText(String weekText) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+        'cachedSelectedWeek', weekText); // Cache the selected week text
   }
 
   Future<void> fetchSchedule() async {
@@ -154,11 +171,66 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
         ''',
       );
 
+      // Calculate the start date of the week
+      DateTime startDate = DateFormat('dd/MM/yyyy').parse(weeks
+          .firstWhere((week) => week['value'] == selectedWeek)['text']!
+          .split('[')[1]
+          .split(']')[0]
+          .split('--')[0]
+          .split('Từ ')[1]
+          .trim());
+
       modifiedHtmlResponse = modifiedHtmlResponse.replaceAll(
-        '<th scope="col"',
+        '<th scope="col" style="width:2%;">Tiết</th>',
         '''
-        <th scope="col" style="border: 1px solid #ddd; padding: 12px; text-align: center; background: #2d58a3; color: white; font-weight: bold; font-size: 16px;  text-align: center; vertical-align: middle; "
+        <th scope="col" style="border: 1px solid #ddd; padding: 12px; text-align: center; background: #2d58a3; color: white; font-weight: bold; font-size: 16px; text-align: center; vertical-align: middle;"><center>Tiết</center></th>
         ''',
+      );
+
+      modifiedHtmlResponse = modifiedHtmlResponse.replaceAllMapped(
+        RegExp(r'<th scope="col" style="(.*?)">(.*?)</th>'),
+        (match) {
+          // Check if the match has at least 2 groups
+          if (match.groupCount < 2) {
+            return match[0]!; // Return original if format is unexpected
+          }
+          // Get the day of the week from the header text
+          String dayText = match.group(2)!;
+          int dayOffset = 0;
+
+          // Determine the day offset based on the day name
+          switch (dayText.trim()) {
+            case 'Thứ 2':
+              dayOffset = 0;
+              break;
+            case 'Thứ 3':
+              dayOffset = 1;
+              break;
+            case 'Thứ 4':
+              dayOffset = 2;
+              break;
+            case 'Thứ 5':
+              dayOffset = 3;
+              break;
+            case 'Thứ 6':
+              dayOffset = 4;
+              break;
+            case 'Thứ 7':
+              dayOffset = 5;
+              break;
+            case 'CN':
+              dayOffset = 6;
+              break;
+            default:
+              return match[0]!; // Return original if day is not recognized
+          }
+
+          // Calculate the date for the current day
+          DateTime currentDate = startDate.add(Duration(days: dayOffset));
+          String formattedDate = DateFormat('d/M').format(currentDate);
+
+          return '<th scope="col" style="border: 1px solid #ddd; padding: 12px; text-align: center; background: #2d58a3; color: white; font-weight: bold; font-size: 16px; text-align: center; vertical-align: middle;"><center>$dayText <br /> <small>($formattedDate)</small></center></th>';
+        },
       );
 
       modifiedHtmlResponse = modifiedHtmlResponse.replaceAll(
@@ -168,11 +240,10 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
         ''',
       );
 
-      modifiedHtmlResponse = modifiedHtmlResponse.replaceAll(
-        '<td style="',
-        '''
-        <td style="border: 1px solid #ddd; padding: 5px; text-align: center; vertical-align: middle; background: unset; "
-        ''',
+      modifiedHtmlResponse = modifiedHtmlResponse.replaceAllMapped(
+        RegExp(r'<td style="(.*?)">(.*?)</td>'),
+        (match) =>
+            '<td style="border: 1px solid #ddd; padding: 5px; text-align: center; vertical-align: middle; background: unset;"><center>${match.group(2)}</center></td>',
       );
 
       modifiedHtmlResponse = modifiedHtmlResponse.replaceAllMapped(
@@ -195,7 +266,7 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
         isLoadingSchedule = false;
       });
 
-      // Cache dữ liệu lịch học sau khi tải thành công
+      // Cache the schedule after successful fetch
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString('cachedSchedule', htmlResponse!); // Save to cache
     } else {
@@ -226,7 +297,7 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
         title: Text('Tra cứu lịch học'),
       ),
       body: RefreshIndicator(
-        onRefresh: refreshData, // Gọi hàm refreshData khi kéo xuống
+        onRefresh: refreshData,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -254,14 +325,14 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
                       : '',
                 ),
               ),
-              SizedBox(height: 20),
+              SizedBox(height: 10),
               Text(
-                selectedWeek != null
+                selectedWeek != null && weeks.isNotEmpty
                     ? weeks.firstWhere(
                         (week) => week['value'] == selectedWeek)['text']!
                     : '',
               ),
-              SizedBox(height: 5),
+              SizedBox(height: 10),
               if (isLoadingSchedule)
                 CircularProgressIndicator()
               else if (htmlResponse != null)

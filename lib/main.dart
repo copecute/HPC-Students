@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:hpc_students/Screen/traCuuLichHocScreen.dart';
+import 'package:hpc_students/Screen/lichHoc/traCuuLichHocScreen.dart';
 import 'package:hpc_students/Screen/traDiemScreen.dart';
 import 'include/config.dart';
 import 'package:provider/provider.dart';

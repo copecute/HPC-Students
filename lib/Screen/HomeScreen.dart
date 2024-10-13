@@ -13,7 +13,7 @@ import 'package:hpc_students/Screen/menu/menuScreen.dart';
 import 'package:hpc_students/Screen/rankScreen.dart';
 import 'package:hpc_students/Screen/timNguoiYeu/chat.dart';
 import 'package:hpc_students/Screen/traCuuHocPhiScreen.dart';
-import 'package:hpc_students/Screen/traCuuLichHocScreen.dart';
+import 'package:hpc_students/Screen/lichHoc/traCuuLichHocScreen.dart';
 import 'package:hpc_students/Screen/traDiemScreen.dart';
 import 'package:hpc_students/include/theme_provider.dart';
 import 'package:hpc_students/include/cookie_provider.dart';

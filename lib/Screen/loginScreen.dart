@@ -4,12 +4,12 @@ import 'package:url_launcher/url_launcher.dart'; // Import url_launcher
 import 'package:hpc_students/include/config.dart';
 import 'package:hpc_students/main.dart';
 import 'package:hpc_students/include/cookie_provider.dart';
-import 'package:hpc_students/Screen/traCuuVanBang.dart';
-import 'package:hpc_students/Screen/traCuuLichHocScreen.dart'; // Import the TraCuuLichHocScreen
+import 'package:hpc_students/Screen/lichHoc/traCuuLichHocScreen.dart'; // Import the TraCuuLichHocScreen
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io'; // Import dart:io for handling SocketException
 import 'dart:convert'; // Import dart:convert for JSON encoding/decoding
+import 'package:hpc_students/Screen/lichHoc/lichHocCached.dart'; // Import the new LichHocCachedScreen
 // Import for using platform channels
 
 enum LoginStatus { success, failure, redirect }
@@ -169,11 +169,11 @@ class _LoginScreenState extends State<LoginScreen> {
     String? cachedSchedule = prefs.getString('cachedSchedule');
 
     if (cachedSchedule != null) {
-      // Directly navigate to the cached schedule screen
+      // Navigate to the cached schedule screen
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) =>
-              TraCuuLichHocScreen(), // Navigate to the schedule screen
+              LichHocCachedScreen(), // Navigate to the new screen
         ),
       );
     }
