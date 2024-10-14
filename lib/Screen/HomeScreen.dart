@@ -643,7 +643,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: Text(
                               'Xem tất cả >',
                               style: TextStyle(
-                                color: Colors.blue,
+                                color: Color(0xFF2d59a4),
                               ),
                             ),
                           ),

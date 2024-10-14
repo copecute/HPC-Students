@@ -1,0 +1,36 @@
+flutter_native_splash:
+  # Màu nền cho splash screen
+  color: "#ffffff"
+
+  # Màu nền cho chế độ tối (dark mode)
+  color_dark: "#252833"  # Thay đổi màu nền cho chế độ tối
+  
+  # Hình ảnh splash sử dụng cho mọi nền tảng
+  image: assets/logoSplash.png
+  resize_mode: contain  # Đảm bảo logo vừa màn hình mà không bị cắt
+
+  # Cấu hình riêng cho Android 12+ với hình ảnh và màu nền
+  android_12:
+    image: assets/logoSplash.png
+    color: "#ffffff"
+    color_dark: "#252833"  # Thay đổi màu nền cho chế độ tối
+    resize_mode: contain  # Đảm bảo logo vừa màn hình mà không bị cắt
+  
+  # Các thiết lập khác có thể bỏ qua nếu không cần tùy chỉnh
+  # Ví dụ: Không cần cài đặt chế độ tối (dark mode) riêng biệt.
+  
+  #các cấu hình cho màu nền, hình ảnh có thể khác nhau giữa các nền tảng:
+  color_android: "#ffffff"
+  color_ios: "#ffffff"
+  image_android: assets/logoSplash.png
+  image_ios: assets/logoSplash.png
+  
+  # Vị trí của ảnh splash, trung tâm theo mặc định
+  android_gravity: center
+  ios_content_mode: center
+  
+  # Để màn hình toàn màn hình trên Android, không có thanh trạng thái
+  fullscreen: true
+  
+  # Đặt hướng màn hình cho ứng dụng khi khởi động splash screen
+  android_screen_orientation: portrait

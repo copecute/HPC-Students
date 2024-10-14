@@ -13,6 +13,8 @@ import 'package:hpc_students/Screen/HomeScreen.dart';
 import 'package:hpc_students/Screen/menu/menuScreen.dart';
 import 'include/theme_provider.dart'; // Import ThemeProvider
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:curved_labeled_navigation_bar/curved_navigation_bar.dart'; // Import CurvedNavigationBar
+import 'package:curved_labeled_navigation_bar/curved_navigation_bar_item.dart'; // Import CurvedNavigationBarItem
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Ensure binding is initialized
@@ -46,12 +48,11 @@ class MyApp extends StatelessWidget {
       title: 'HPC Students',
       theme: themeProvider.lightTheme, // Light theme
       darkTheme: themeProvider.darkTheme, // Dark theme
-      themeMode: themeProvider.themeMode, // Set the theme mode
-      // Locale tự động nhận diện từ ngôn ngữ hệ thống
+      themeMode: themeProvider.themeMode, // Set the theme mode to system
       locale: WidgetsBinding.instance.window.locale,
       supportedLocales: [
-        const Locale('en', 'US'), // Tiếng Anh
-        const Locale('vi', 'VN'), // Tiếng Việt
+        const Locale('en', 'US'), // English
+        const Locale('vi', 'VN'), // Vietnamese
       ],
       localizationsDelegates: [
         GlobalMaterialLocalizations.delegate,
@@ -62,7 +63,10 @@ class MyApp extends StatelessWidget {
         future:
             _mockCheckLoginStatus(), // Use a mock future that delays the check
         builder: (context, snapshot) {
-          // Directly return LoginScreen after the future completes
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(
+                child: CircularProgressIndicator()); // Show loading indicator
+          }
           return LoginScreen(); // Default to the login screen after delay
         },
       ),
@@ -118,49 +122,121 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0; // Chỉ số màn hình đang chọn
+  int _selectedIndex = 0; // Current selected index
+  GlobalKey<CurvedNavigationBarState> _bottomNavigationKey =
+      GlobalKey(); // Key for CurvedNavigationBar
 
-  // Danh sách các màn hình
   final List<Widget> _screens = [
-    HomeScreen(), // Màn hình trang chủ
-    TraCuuLichHocScreen(), // Màn hình lịch học
-    TraDiemScreen(), // Màn hình điểm rèn luyện
-    MenuScreen(), // Màn hình menu
+    HomeScreen(), // Home screen
+    TraCuuLichHocScreen(), // Schedule screen
+    TraDiemScreen(), // Results screen
+    MenuScreen(), // Menu screen
   ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index; // Cập nhật chỉ số màn hình
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider =
+        Provider.of<ThemeProvider>(context); // Access ThemeProvider
     return Scaffold(
-      body: _screens[_selectedIndex], // Hiển thị màn hình tương ứng
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Trang chủ',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today), // Biểu tượng lịch học
-            label: 'Lịch học',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add_chart), // Biểu tượng điểm rèn luyện
-            label: 'Kết quả học tập',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_circle), // Biểu tượng hồ sơ
-            label: 'Hồ sơ',
-          ),
+      body: _screens[_selectedIndex], // Display the corresponding screen
+      bottomNavigationBar: CurvedNavigationBar(
+        key: _bottomNavigationKey,
+        index: _selectedIndex,
+        items: [
+          CurvedNavigationBarItem(
+              child: Icon(
+                Icons.home,
+                color: _selectedIndex == 0 // Check if this item is selected
+                    ? themeProvider.themeMode == ThemeMode.dark ||
+                            (themeProvider.themeMode == ThemeMode.system &&
+                                MediaQuery.of(context).platformBrightness ==
+                                    Brightness.dark)
+                        ? Colors.blue
+                        : themeProvider.lightTheme.primaryColor // Active color
+                    : themeProvider.themeMode == ThemeMode.dark ||
+                            (themeProvider.themeMode == ThemeMode.system &&
+                                MediaQuery.of(context).platformBrightness ==
+                                    Brightness.dark)
+                        ? Colors.white
+                        : Color(0xFF747474),
+              ), // Icon color
+              label: 'Trang chủ'),
+          CurvedNavigationBarItem(
+              child: Icon(
+                Icons.calendar_today,
+                color: _selectedIndex == 1 // Check if this item is selected
+                    ? themeProvider.themeMode == ThemeMode.dark ||
+                            (themeProvider.themeMode == ThemeMode.system &&
+                                MediaQuery.of(context).platformBrightness ==
+                                    Brightness.dark)
+                        ? Colors.blue
+                        : themeProvider.lightTheme.primaryColor // Active color
+                    : themeProvider.themeMode == ThemeMode.dark ||
+                            (themeProvider.themeMode == ThemeMode.system &&
+                                MediaQuery.of(context).platformBrightness ==
+                                    Brightness.dark)
+                        ? Colors.white
+                        : Color(0xFF747474),
+              ), // Icon color
+              label: 'Lịch học'),
+          CurvedNavigationBarItem(
+              child: Icon(
+                Icons.add_chart,
+                color: _selectedIndex == 2 // Check if this item is selected
+                    ? themeProvider.themeMode == ThemeMode.dark ||
+                            (themeProvider.themeMode == ThemeMode.system &&
+                                MediaQuery.of(context).platformBrightness ==
+                                    Brightness.dark)
+                        ? Colors.blue
+                        : themeProvider.lightTheme.primaryColor // Active color
+                    : themeProvider.themeMode == ThemeMode.dark ||
+                            (themeProvider.themeMode == ThemeMode.system &&
+                                MediaQuery.of(context).platformBrightness ==
+                                    Brightness.dark)
+                        ? Colors.white
+                        : Color(0xFF747474),
+              ), // Icon color
+              label: 'Kết quả học tập'),
+          CurvedNavigationBarItem(
+              child: Icon(
+                Icons.account_circle,
+                color: _selectedIndex == 3 // Check if this item is selected
+                    ? themeProvider.themeMode == ThemeMode.dark ||
+                            (themeProvider.themeMode == ThemeMode.system &&
+                                MediaQuery.of(context).platformBrightness ==
+                                    Brightness.dark)
+                        ? Colors.blue
+                        : themeProvider.lightTheme.primaryColor // Active color
+                    : themeProvider.themeMode == ThemeMode.dark ||
+                            (themeProvider.themeMode == ThemeMode.system &&
+                                MediaQuery.of(context).platformBrightness ==
+                                    Brightness.dark)
+                        ? Colors.white
+                        : Color(0xFF747474),
+              ), // Icon color
+              label: 'Hồ sơ'),
         ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Color(0xFF2d59a4),
-        unselectedItemColor: Colors.grey, // Màu cho item không được chọn
-        onTap: _onItemTapped, // Gọi hàm khi nhấn vào nút
+        color: themeProvider.themeMode == ThemeMode.dark ||
+                (themeProvider.themeMode == ThemeMode.system &&
+                    MediaQuery.of(context).platformBrightness ==
+                        Brightness.dark)
+            ? Color(0xFF1b1a1f)
+            : Color(0xFFeeeeee),
+        buttonBackgroundColor: themeProvider.themeMode == ThemeMode.dark ||
+                (themeProvider.themeMode == ThemeMode.system &&
+                    MediaQuery.of(context).platformBrightness ==
+                        Brightness.dark)
+            ? Color(0xFF1b1a1f)
+            : Color(0xFFeeeeee),
+        backgroundColor: Colors.transparent,
+        animationCurve: Curves.easeInOut,
+        animationDuration: Duration(milliseconds: 600),
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index; // Update selected index
+          });
+        },
+        letIndexChange: (index) => true,
       ),
     );
   }
