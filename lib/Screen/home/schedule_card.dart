@@ -40,7 +40,8 @@ class _ScheduleCardState extends State<ScheduleCard> {
 
   Future<void> _loadCachedSchedule() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? cachedHtmlResponse = prefs.getString('cachedSchedule');
+    String? cachedHtmlResponse =
+        prefs.getString('cachedScheduleCard'); // Updated variable name
     setState(() {
       htmlResponse = cachedHtmlResponse;
       isLoadingSchedule =
@@ -113,8 +114,16 @@ class _ScheduleCardState extends State<ScheduleCard> {
   }
 
   Future<void> fetchSchedule() async {
+    if (htmlResponse != null) {
+      // Check if there's already cached data
+      setState(() {
+        isLoadingSchedule = false; // Don't show loading if cached data exists
+      });
+      return; // Exit early if cached data is available
+    }
+
     setState(() {
-      isLoadingSchedule = true;
+      isLoadingSchedule = true; // Show loading if no cached data
     });
 
     String? cookie =
@@ -152,7 +161,8 @@ class _ScheduleCardState extends State<ScheduleCard> {
 
       // Cache the HTML response
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('cachedSchedule', htmlResponse!); // Save to cache
+      await prefs.setString(
+          'cachedScheduleCard', htmlResponse!); // Updated variable name
     } else {
       setState(() {
         isLoadingSchedule = false;
