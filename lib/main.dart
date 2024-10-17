@@ -63,10 +63,6 @@ class MyApp extends StatelessWidget {
         future:
             _mockCheckLoginStatus(), // Use a mock future that delays the check
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-                child: CircularProgressIndicator()); // Show loading indicator
-          }
           return LoginScreen(); // Default to the login screen after delay
         },
       ),
@@ -230,7 +226,7 @@ class _MainScreenState extends State<MainScreen> {
             : Color(0xFFeeeeee),
         backgroundColor: Colors.transparent,
         animationCurve: Curves.easeInOut,
-        animationDuration: Duration(milliseconds: 600),
+        animationDuration: Duration(milliseconds: 400),
         onTap: (index) {
           setState(() {
             _selectedIndex = index; // Update selected index
