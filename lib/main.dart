@@ -9,7 +9,7 @@ import 'package:provider/provider.dart';
 import 'include/cookie_provider.dart'; // Import CookieProvider
 import 'package:hpc_students/Screen/loginScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Thư viện SharedPreferences
-import 'package:hpc_students/Screen/HomeScreen.dart';
+import 'package:hpc_students/Screen/home/HomeScreen.dart';
 import 'package:hpc_students/Screen/menu/menuScreen.dart';
 import 'include/theme_provider.dart'; // Import ThemeProvider
 import 'package:flutter_localizations/flutter_localizations.dart';
