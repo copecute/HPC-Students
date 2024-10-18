@@ -129,6 +129,8 @@ class _TraCuuLichHocScreenState extends State<TraCuuLichHocScreen> {
   Future<void> fetchSchedule() async {
     setState(() {
       isLoadingSchedule = true;
+      htmlResponse =
+          null; // Xóa htmlResponse trước đó để tránh hiển thị dữ liệu cũ
     });
 
     String? cookie =

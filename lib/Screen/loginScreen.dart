@@ -4,7 +4,7 @@ import 'package:url_launcher/url_launcher.dart'; // Import url_launcher
 import 'package:hpc_students/include/config.dart';
 import 'package:hpc_students/main.dart';
 import 'package:hpc_students/include/cookie_provider.dart';
-import 'package:hpc_students/Screen/lichHoc/traCuuLichHocScreen.dart'; // Import the TraCuuLichHocScreen
+// Import the TraCuuLichHocScreen
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io'; // Import dart:io for handling SocketException

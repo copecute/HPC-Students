@@ -1,13 +1,8 @@
-import 'dart:io';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:html/parser.dart' as htmlParser;
 import 'package:xml/xml.dart';
 import 'package:provider/provider.dart';
-import 'package:http/io_client.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:hpc_students/include/theme_provider.dart';
 import 'package:hpc_students/include/cookie_provider.dart';
