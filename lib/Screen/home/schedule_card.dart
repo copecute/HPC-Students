@@ -142,6 +142,8 @@ class _ScheduleCardState extends State<ScheduleCard> {
     Map<String, String> postData = {
       'Nam_hoc': getCurrentAcademicYear(),
       'Tuan_thu': selectedWeek ?? '',
+      'selectedDate': DateFormat('yyyy-MM-dd')
+          .format(selectedDate!), // Pass the selected date
     };
 
     final response = await http.post(
@@ -185,12 +187,13 @@ class _ScheduleCardState extends State<ScheduleCard> {
       "Chủ Nhật"
     ];
 
-    // Get today's day index
-    int todayIndex = DateTime.now().weekday - 1; // Adjust for 0-based index
+    // Get the selected day's index
+    int selectedDayIndex =
+        selectedDate!.weekday - 1; // Adjust for 0-based index
 
-    // Initialize a map to store the schedule for today
+    // Initialize a map to store the schedule for the selected day
     Map<String, List<Map<String, dynamic>>> schedule = {
-      daysOfWeek[todayIndex]: []
+      daysOfWeek[selectedDayIndex]: []
     };
 
     for (var row in rows) {
@@ -219,7 +222,7 @@ class _ScheduleCardState extends State<ScheduleCard> {
 
             // Tính số tiết kết thúc
             int periodEnd = int.parse(period) + rowspan - 1;
-            print(cell.innerHtml);
+
             // Lấy thông tin từ content của cell
             String hocPhan = '';
             String phong = '';
@@ -246,8 +249,9 @@ class _ScheduleCardState extends State<ScheduleCard> {
             }
 
             // Thêm thông tin vào lịch hôm nay
-            if (i - 1 == todayIndex) {
-              schedule[daysOfWeek[todayIndex]]?.add({
+            if (i - 1 == selectedDayIndex) {
+              // Use selectedDayIndex instead of todayIndex
+              schedule[daysOfWeek[selectedDayIndex]]?.add({
                 'hocPhan': hocPhan, // Tên học phần
                 'periodStart': period, // Tiết bắt đầu
                 'periodEnd': periodEnd, // Tiết kết thúc
@@ -260,37 +264,78 @@ class _ScheduleCardState extends State<ScheduleCard> {
       }
     }
 
-    // Build the UI for today
-    String day = daysOfWeek[todayIndex];
+    // Build the UI for the selected day
+    String day = daysOfWeek[selectedDayIndex];
     var daySessions = schedule[day];
-    String dayContent =
-        '<strong>Lịch học $day (${DateFormat('d/M').format(DateTime.now())})</strong><br/>';
 
-    if (daySessions != null && daySessions.isNotEmpty) {
-      for (var session in daySessions) {
-        dayContent += 'Học phần: ${session['hocPhan']}<br/>'
-            'Phòng: ${session['room']}<br/>'
-            'Giảng viên: ${session['teacher']}<br/>'
-            'Tiết: ${session['periodStart']} - ${session['periodEnd']}';
-      }
-    } else {
-      dayContent += 'Hôm nay không có lịch học!';
-    }
-    cards.add(
-      Card(
-        margin: EdgeInsets.all(8.0),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: HtmlWidget(
-            dayContent,
-            textStyle: TextStyle(fontSize: 16),
+    if (daySessions != null && daySessions.length > 1) {
+      cards.add(
+        Container(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: daySessions.length,
+            itemBuilder: (context, index) {
+              var session = daySessions[index];
+              return Card(
+                margin: EdgeInsets.all(8.0),
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Học phần: ${session['hocPhan']}'),
+                      Text('Phòng: ${session['room']}'),
+                      Text('Giảng viên: ${session['teacher']}'),
+                      Text(
+                          'Tiết: ${session['periodStart']} - ${session['periodEnd']}'),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8.0),
+      );
+    } else if (daySessions == null || daySessions.isEmpty) {
+      cards.add(
+        Card(
+          margin: EdgeInsets.all(8.0),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Hôm nay không có lịch học!'),
+              ],
+            ),
+          ),
         ),
-      ),
-    );
+      );
+    }
+
+    // Add a full-width card if there's only one session
+    if (daySessions != null && daySessions.length == 1) {
+      var session = daySessions[0];
+      cards.add(
+        Card(
+          margin: EdgeInsets.all(8.0),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Học phần: ${session['hocPhan']}'),
+                Text('Phòng: ${session['room']}'),
+                Text('Giảng viên: ${session['teacher']}'),
+                Text(
+                    'Tiết: ${session['periodStart']} - ${session['periodEnd']}'),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return cards;
   }
@@ -310,23 +355,74 @@ class _ScheduleCardState extends State<ScheduleCard> {
       child: isLoadingSchedule
           ? Center(child: CircularProgressIndicator())
           : htmlResponse != null
-              ? Column(
-                  children: _buildScheduleCards(htmlResponse!).map((card) {
-                    return GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => TraCuuLichHocScreen(),
+              ? Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Lịch học ${DateFormat('dd/MM/yyyy').format(selectedDate!)}',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.arrow_back),
+                                onPressed: () {
+                                  setState(() {
+                                    selectedDate = selectedDate!
+                                        .subtract(Duration(days: 1));
+                                    refreshData(); // Refresh the schedule for the previous day
+                                  });
+                                },
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.schedule), // Today button icon
+                                onPressed: () {
+                                  setState(() {
+                                    selectedDate =
+                                        DateTime.now(); // Set to today's date
+                                    refreshData(); // Refresh the schedule for today
+                                  });
+                                },
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.arrow_forward),
+                                onPressed: () {
+                                  setState(() {
+                                    selectedDate =
+                                        selectedDate!.add(Duration(days: 1));
+                                    refreshData(); // Refresh the schedule for the next day
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      ..._buildScheduleCards(htmlResponse!).map((card) {
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => TraCuuLichHocScreen(),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: double.infinity, // Set card width to 100%
+                            child: card,
                           ),
                         );
-                      },
-                      child: Container(
-                        width: double.infinity, // Set card width to 100%
-                        child: card,
-                      ),
-                    );
-                  }).toList(),
+                      }).toList(),
+                    ],
+                  ),
                 )
               : Column(
                   children: _buildScheduleCards(

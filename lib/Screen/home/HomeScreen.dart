@@ -319,6 +319,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
+              SizedBox(height: 20),
+              // Lịch học section
               ScheduleCard(), // Display the schedule card
 
               SizedBox(height: 20),
