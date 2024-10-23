@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:hpc_students/Screen/home2/home2.dart';
 import 'package:hpc_students/Screen/lichHoc/traCuuLichHocScreen.dart';
 import 'package:hpc_students/Screen/traDiemScreen.dart';
 import 'include/config.dart';
@@ -123,7 +124,7 @@ class _MainScreenState extends State<MainScreen> {
       GlobalKey(); // Key for CurvedNavigationBar
 
   final List<Widget> _screens = [
-    HomeScreen(), // Home screen
+    HomeScreen2(), // Home screen
     TraCuuLichHocScreen(), // Schedule screen
     TraDiemScreen(), // Results screen
     MenuScreen(), // Menu screen

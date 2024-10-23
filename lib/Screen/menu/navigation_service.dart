@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hpc_students/Screen/TraCuuDiemRenLuyenScreen.dart';
+import 'package:hpc_students/Screen/home2/home2.dart';
 import 'package:hpc_students/Screen/kiemSoatTruyCap/veXe.dart';
 import 'package:hpc_students/Screen/traCuuVanBang.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -16,6 +17,12 @@ import '../yeuCau/traCuuYeuCau.dart';
 
 Future<void> handleNavigation(BuildContext context, int id) async {
   switch (id) {
+    case 1:
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => HomeScreen2()),
+      );
+      break;
     case 2:
       Navigator.push(
         context,

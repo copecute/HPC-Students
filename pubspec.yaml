@@ -6,7 +6,7 @@ publish_to: none # Remove quotes around 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.5.3
+  sdk: '>=3.4.0 <4.0.0'
 
 dependencies:
   flutter:
@@ -71,3 +71,6 @@ flutter:
     - assets/AccessControl/GetCarSuccessfully.svg
     - assets/yeuCau/khong-co-yeu-cau.svg
     - assets/Blog/
+    - assets/icons/
+    - assets/images/
+

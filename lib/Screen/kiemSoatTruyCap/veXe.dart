@@ -51,11 +51,6 @@ class _VeXeScreenState extends State<VeXeScreen> {
   }
 
   Future<void> _fetchTicketInfo() async {
-    if (ggsapiKey == null) {
-      print("API key is not set."); // Debug print
-      return;
-    }
-
     setState(() {
       _isLoading = true; // Set loading state
     });
@@ -141,11 +136,6 @@ class _VeXeScreenState extends State<VeXeScreen> {
   }
 
   Future<void> _quetThe() async {
-    if (ggsapiKey == null) {
-      print("API key is not set."); // Debug print
-      return;
-    }
-
     print("Quét thẻ for maThe: $_maThe"); // Debug print
 
     // Prepare the URL and the body for the POST request
@@ -316,11 +306,6 @@ class _VeXeScreenState extends State<VeXeScreen> {
   }
 
   Future<void> _submitCardInfo(String soTien, String donGia) async {
-    if (ggsapiKey == null) {
-      print("API key is not set."); // Debug print
-      return;
-    }
-
     final url =
         'https://script.google.com/macros/s/AKfycbykSJAxuza1q-pPmFOez8wgdqxQiaeInLuJL_ERs1Q3Ean7DGb3-aYXBzDRsbjxIbG9/exec?action=update&maThe=$_maThe&soTien=$soTien&donGia=$donGia&copecute=$ggsapiKey';
 
