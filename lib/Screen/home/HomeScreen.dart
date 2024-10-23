@@ -325,7 +325,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               SizedBox(height: 20),
               // Danh mục
-              CategoryGrid(maSinhVien: _maSinhVien), // Pass maSinhVien
+              CategoryGrid(maSinhVien: _maSinhVien),
               SizedBox(height: 20),
 
               // Tin tức section

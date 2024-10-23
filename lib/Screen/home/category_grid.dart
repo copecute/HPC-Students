@@ -109,7 +109,9 @@ class CategoryGrid extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 40),
+            Icon(icon,
+                size: 35,
+                color: Color(0xFF2d59a4)), // Changed icon color to blue
             SizedBox(height: 8),
             Text(title, textAlign: TextAlign.center),
           ],

@@ -451,9 +451,15 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           if (!isChatActive && !isSearching)
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF2d59a4),
+                padding: EdgeInsets.symmetric(vertical: 15),
+                minimumSize: Size(double.infinity, 50),
+              ),
               onPressed: _joinChat,
               child: Text('Tìm người mới'),
             ),
+          SizedBox(height: 10),
         ],
       ),
     );

@@ -17,14 +17,28 @@ class _TraCuuVanBangScreenState extends State<TraCuuVanBangScreen> {
   final TextEditingController soHieuController = TextEditingController();
   Map<String, String>? result; // Thay đổi kiểu dữ liệu
   bool _isLoading = false; // Biến để theo dõi trạng thái loading
+  bool _hasSearched = false; // Thêm biến này để theo dõi việc tìm kiếm
 
   Future<void> search() async {
+    final maSv = maSinhVienController.text.trim();
+    final soHieu = soHieuController.text.trim();
+
+    if (maSv.isEmpty && soHieu.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Vui lòng nhập Mã sinh viên hoặc Số hiệu văn bằng'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     setState(() {
-      _isLoading = true; // Bắt đầu loading
+      _isLoading = true;
+      result = null; // Reset kết quả trước khi tìm kiếm mới
+      _hasSearched = true; // Đánh dấu đã thực hiện tìm kiếm
     });
 
-    final maSv = maSinhVienController.text;
-    final soHieu = soHieuController.text;
     final response = await http.get(Uri.parse(
         '$baseUrl/TraCuuVanBang/_Chitiet?Ma_sv=$maSv&So_hieu=$soHieu'));
 
@@ -34,35 +48,34 @@ class _TraCuuVanBangScreenState extends State<TraCuuVanBangScreen> {
       var studentInfo =
           document.querySelectorAll('div.col-md-3 ul.list-group li');
 
-      if (studentInfo.isNotEmpty) {
-        Map<String, String> data = {};
-        for (var item in studentInfo) {
-          var title = item.querySelector('b')?.text.replaceAll(':', '').trim();
-          var value = item.text
-              .replaceAll(item.querySelector('b')?.text ?? '', '')
-              .trim();
-          if (title != null) {
-            data[title] = value;
-          }
+      Map<String, String> data = {};
+      for (var item in studentInfo) {
+        var title = item.querySelector('b')?.text.replaceAll(':', '').trim();
+        var value = item.text
+            .replaceAll(item.querySelector('b')?.text ?? '', '')
+            .trim();
+        if (title != null && value.isNotEmpty) {
+          data[title] = value;
         }
-        setState(() {
-          result = data; // Cập nhật kết quả
-        });
-      } else {
-        print('Không tìm thấy thông tin sinh viên.');
-        setState(() {
-          result = null; // Hoặc xử lý theo cách khác
-        });
       }
+
+      setState(() {
+        // Kiểm tra xem có thông tin hợp lệ hay không
+        if (data.isNotEmpty) {
+          result = data;
+        } else {
+          result = null; // Không có thông tin hợp lệ
+        }
+      });
     } else {
       print('Lỗi: ${response.statusCode}');
       setState(() {
-        result = null; // Hoặc xử lý theo cách khác
+        result = null;
       });
     }
 
     setState(() {
-      _isLoading = false; // Kết thúc loading
+      _isLoading = false;
     });
   }
 
@@ -109,10 +122,20 @@ class _TraCuuVanBangScreenState extends State<TraCuuVanBangScreen> {
               ),
             ),
             SizedBox(height: 20),
-            if (_isLoading) // Hiển thị loading
-              Center(child: CircularProgressIndicator()),
-            if (result != null && !_isLoading) ...[
-              // Hiển thị kết quả dưới dạng danh sách card
+            if (_isLoading)
+              Center(child: CircularProgressIndicator())
+            else if (_hasSearched && result == null)
+              Center(
+                child: Text(
+                  'Không tìm thấy kết quả',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red,
+                  ),
+                ),
+              )
+            else if (result != null)
               Card(
                 elevation: 4,
                 shape: RoundedRectangleBorder(
@@ -147,7 +170,6 @@ class _TraCuuVanBangScreenState extends State<TraCuuVanBangScreen> {
                   ),
                 ),
               ),
-            ],
           ],
         ),
       ),

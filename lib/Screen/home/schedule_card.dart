@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 import 'package:hpc_students/include/cookie_provider.dart';
 import 'package:html/parser.dart' as html;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:hpc_students/Screen/loginScreen.dart';
 
 class ScheduleCard extends StatefulWidget {
