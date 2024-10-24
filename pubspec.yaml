@@ -3,7 +3,7 @@ description: "HPC Students là ứng dụng hữu ích dành cho sinh viên trư
 
 publish_to: none # Remove quotes around 'none'
 
-version: 1.0.0+1
+version: 1.0.0+2
 
 environment:
   sdk: ^3.5.3

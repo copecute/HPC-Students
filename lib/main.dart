@@ -43,6 +43,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       scaffoldMessengerKey:
           _scaffoldMessengerKey, // Set the key for ScaffoldMessenger
       title: 'HPC Students',

@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:hpc_students/Screen/traCuuVanBang.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart'; // Import url_launcher
 import 'package:hpc_students/include/config.dart';
 import 'package:hpc_students/main.dart';
 import 'package:hpc_students/include/cookie_provider.dart';
-// Import the TraCuuLichHocScreen
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:io'; // Import dart:io for handling SocketException
-import 'dart:convert'; // Import dart:convert for JSON encoding/decoding
-import 'package:hpc_students/Screen/lichHoc/lichHocCached.dart'; // Import the new LichHocCachedScreen
-// Import for using platform channels
+import 'dart:io';
+import 'dart:convert';
+import 'package:hpc_students/Screen/lichHoc/lichHocCached.dart';
 
 enum LoginStatus { success, failure, redirect }
 
@@ -525,16 +524,25 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 16.0),
                         _buildViewCachedScheduleButton(),
                         const SizedBox(height: 16.0),
-                        Text(
-                          'Tra cứu văn bằng',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    color: brightness == Brightness.dark
-                                        ? Colors
-                                            .white70 // Light text for dark theme
-                                        : Colors
-                                            .black54, // Dark text for light theme
-                                  ),
+                        TextButton(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => TraCuuVanBangScreen()),
+                          ), // Placeholder action
+                          child: Text(
+                            'Tra cứu văn bằng',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium!
+                                .copyWith(
+                                  color: brightness == Brightness.dark
+                                      ? Colors
+                                          .white70 // Light text for dark theme
+                                      : Colors
+                                          .black54, // Dark text for light theme
+                                ),
+                          ),
                         ),
                       ],
                     ),
