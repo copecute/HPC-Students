@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:hpc_students/Screen/lichHoc/lichHocCached.dart';
+import 'package:hpc_students/include/theme_provider.dart';
 
 enum LoginStatus { success, failure, redirect }
 
@@ -33,6 +34,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _autoLogin() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool autoLoginEnabled = prefs.getBool('auto_login_enabled') ?? true;
+
+    if (!autoLoginEnabled) {
+      print("Auto login is disabled");
+      await prefs.remove('username');
+      await prefs.remove('password');
+      await prefs.remove('cookie');
+      return;
+    }
+
     String? savedUsername = prefs.getString('username');
     String? savedPassword = prefs.getString('password');
 
@@ -345,13 +356,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Determine the current brightness of the system
-    final brightness = MediaQuery.of(context).platformBrightness;
+    // Lấy theme provider từ context
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.themeMode == ThemeMode.dark;
 
     return Scaffold(
-      backgroundColor: brightness == Brightness.dark
-          ? Color(0xFF282a36) // Set background to black for dark mode
-          : Colors.white, // Set background to white for light mode
+      // Sử dụng màu nền từ theme
+      backgroundColor: isDarkMode ? Color(0xFF282a36) : Colors.white,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -361,7 +372,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   SizedBox(height: constraints.maxHeight * 0.1),
                   Image.asset(
-                    "assets/icon.png", // Update with your new logo path
+                    "assets/icon.png",
                     height: 100,
                   ),
                   SizedBox(height: 30),
@@ -370,6 +381,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
+                      // Sử dụng màu chữ từ theme
+                      color: isDarkMode ? Colors.white : Colors.black,
                     ),
                   ),
                   SizedBox(height: constraints.maxHeight * 0.1),
@@ -379,12 +392,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         TextFormField(
                           decoration: InputDecoration(
-                            hintText: 'Mã sinh viên', // Updated hint text
+                            hintText: 'Mã sinh viên',
                             filled: true,
-                            fillColor: brightness == Brightness.dark
-                                ? Colors.grey[800] // Dark input field color
-                                : const Color.fromARGB(255, 188, 187,
-                                    187), // Light input field color
+                            // Sử dụng màu nền input từ theme
+                            fillColor: isDarkMode
+                                ? Colors.grey[800]
+                                : const Color.fromARGB(255, 188, 187, 187),
                             contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 16.0 * 1.5, vertical: 16.0),
                             border: OutlineInputBorder(
@@ -392,8 +405,17 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderRadius:
                                   BorderRadius.all(Radius.circular(50)),
                             ),
+                            // Sử dụng màu chữ từ theme
+                            hintStyle: TextStyle(
+                              color:
+                                  isDarkMode ? Colors.white70 : Colors.black54,
+                            ),
                           ),
                           controller: _usernameController,
+                          // Sử dụng màu chữ từ theme
+                          style: TextStyle(
+                            color: isDarkMode ? Colors.white : Colors.black,
+                          ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Vui lòng nhập mã sinh viên';
@@ -408,10 +430,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             decoration: InputDecoration(
                               hintText: 'Mật khẩu',
                               filled: true,
-                              fillColor: brightness == Brightness.dark
-                                  ? Colors.grey[800] // Dark input field color
-                                  : const Color.fromARGB(255, 188, 187,
-                                      187), // Light input field color
+                              // Sử dụng màu nền input từ theme
+                              fillColor: isDarkMode
+                                  ? Colors.grey[800]
+                                  : const Color.fromARGB(255, 188, 187, 187),
                               contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 16.0 * 1.5, vertical: 16.0),
                               border: OutlineInputBorder(
@@ -419,11 +441,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                 borderRadius:
                                     BorderRadius.all(Radius.circular(50)),
                               ),
+                              // Sử dụng màu icon từ theme
                               suffixIcon: IconButton(
                                 icon: Icon(
                                   _obscureText
                                       ? Icons.visibility
                                       : Icons.visibility_off,
+                                  color: isDarkMode
+                                      ? Colors.white70
+                                      : Colors.black54,
                                 ),
                                 onPressed: () {
                                   setState(() {
@@ -431,8 +457,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                   });
                                 },
                               ),
+                              // Sử dụng màu chữ từ theme
+                              hintStyle: TextStyle(
+                                color: isDarkMode
+                                    ? Colors.white70
+                                    : Colors.black54,
+                              ),
                             ),
                             controller: _passwordController,
+                            // Sử dụng màu chữ từ theme
+                            style: TextStyle(
+                              color: isDarkMode ? Colors.white : Colors.black,
+                            ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Vui lòng nhập mật khẩu';
@@ -484,11 +520,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                     .textTheme
                                     .bodyMedium!
                                     .copyWith(
-                                      color: brightness == Brightness.dark
-                                          ? Colors
-                                              .white70 // Light text for dark theme
-                                          : Colors
-                                              .black54, // Dark text for light theme
+                                      color: isDarkMode
+                                          ? Colors.white70
+                                          : Colors.black54,
                                     ),
                               ),
                             ),
@@ -510,11 +544,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                     .textTheme
                                     .bodyMedium!
                                     .copyWith(
-                                      color: brightness == Brightness.dark
-                                          ? Colors
-                                              .white70 // Light text for dark theme
-                                          : Colors
-                                              .black54, // Dark text for light theme
+                                      color: isDarkMode
+                                          ? Colors.white70
+                                          : Colors.black54,
                                     ),
                               ),
                             ),
@@ -536,11 +568,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 .textTheme
                                 .bodyMedium!
                                 .copyWith(
-                                  color: brightness == Brightness.dark
-                                      ? Colors
-                                          .white70 // Light text for dark theme
-                                      : Colors
-                                          .black54, // Dark text for light theme
+                                  color: isDarkMode
+                                      ? Colors.white70
+                                      : Colors.black54,
                                 ),
                           ),
                         ),

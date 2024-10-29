@@ -9,6 +9,8 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart'; // Import InApp
 // Import for defaultTargetPlatform
 import 'package:flutter/gestures.dart'; // Import for VerticalDragGestureRecognizer
 import 'package:shared_preferences/shared_preferences.dart'; // Import SharedPreferences
+// Import for intl package
+import 'package:intl/intl.dart';
 
 const kInitialTextSize = 100; // Initial text size percentage
 const kTextSizePlaceholder = 'TEXT_SIZE_PLACEHOLDER';
@@ -127,6 +129,18 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
   }
 
   String _getHtmlWithTheme(String content) {
+    // Định dạng lại published date
+    String formattedDate = '';
+    try {
+      // Parse chuỗi ISO 8601 thành DateTime
+      DateTime publishedDate = DateTime.parse(published ?? '');
+      // Format lại theo định dạng mong muốn
+      formattedDate = DateFormat('HH:mm - dd/MM/yyyy').format(publishedDate);
+    } catch (e) {
+      formattedDate =
+          published ?? ''; // Giữ nguyên giá trị gốc nếu parse thất bại
+    }
+
     // Determine the current theme
     final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
 
@@ -160,7 +174,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
             font-weight: bold;
           }
           .meta {
-            color: grey;
+            padding: 2px 0;
           }
         * {
         outline:0;
@@ -226,7 +240,8 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
       </head>
       <body>
         <div class="title">$title</div>
-        <div class="meta">Ngày đăng: $published</div>
+        <div class="meta">Nhà xuất bản: HPC Students</div>
+        <div class="meta">Ngày đăng: $formattedDate</div>
         <div class="meta">Chuyên mục: $category</div>
         <br />
         <div>$content</div>

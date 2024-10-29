@@ -6,6 +6,7 @@ import 'blogDetailScreen.dart';
 import 'package:hpc_students/include/config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
+import 'package:intl/intl.dart';
 // Thêm import này cho rootBundle
 
 class BlogScreen extends StatefulWidget {
@@ -356,8 +357,26 @@ class _BlogScreenState extends State<BlogScreen> {
                                     orElse: () => XmlElement(XmlName('link')),
                                   )
                                   .getAttribute('href');
-                              final published =
-                                  post.findElements('published').first.text;
+                              String formattedDate = '';
+                              try {
+                                final publishedRaw =
+                                    post.findElements('published').first.text;
+                                DateTime publishedDate =
+                                    DateTime.parse(publishedRaw);
+                                formattedDate = DateFormat('HH:mm - dd/MM/yyyy')
+                                    .format(publishedDate);
+                              } catch (e) {
+                                formattedDate =
+                                    post.findElements('published').first.text;
+                              }
+                              final category = post
+                                  .findElements('category')
+                                  .where((element) =>
+                                      element.getAttribute('scheme') ==
+                                      'http://www.blogger.com/atom/ns#')
+                                  .map((e) => e.getAttribute('term'))
+                                  .firstWhere((term) => term != null,
+                                      orElse: () => 'Chưa phân loại');
                               final thumbnail = _getThumbnail(post);
 
                               return GestureDetector(
@@ -396,10 +415,20 @@ class _BlogScreenState extends State<BlogScreen> {
                                                   fontSize: 18,
                                                   fontWeight: FontWeight.bold,
                                                 ),
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
                                               ),
-                                              SizedBox(height: 8),
+                                              SizedBox(height: 4),
                                               Text(
-                                                published,
+                                                'Chuyên mục: $category',
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: Colors.blue,
+                                                ),
+                                              ),
+                                              SizedBox(height: 4),
+                                              Text(
+                                                formattedDate,
                                                 style: TextStyle(
                                                   fontSize: 14,
                                                   color: Colors.grey,

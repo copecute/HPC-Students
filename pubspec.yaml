@@ -1,7 +1,7 @@
 name: hpc_students
 description: "HPC Students là ứng dụng hữu ích dành cho sinh viên trường CĐCNBKHN."
 
-publish_to: none # Remove quotes around 'none'
+publish_to: none
 
 version: 1.0.0+2
 

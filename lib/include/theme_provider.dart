@@ -1,13 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemeProvider with ChangeNotifier {
-  ThemeMode _themeMode = ThemeMode.system; // Default to system theme
+  ThemeMode _themeMode = ThemeMode.system;
+  static const String THEME_KEY = 'theme_mode';
+
+  ThemeProvider() {
+    _loadThemeFromPrefs();
+  }
 
   ThemeMode get themeMode => _themeMode;
 
-  void toggleTheme(ThemeMode mode) {
+  // Load theme from SharedPreferences when app starts
+  Future<void> _loadThemeFromPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedThemeMode = prefs.getString(THEME_KEY);
+    if (savedThemeMode != null) {
+      _themeMode = ThemeMode.values.firstWhere(
+        (mode) => mode.toString() == savedThemeMode,
+        orElse: () => ThemeMode.system,
+      );
+      notifyListeners();
+    }
+  }
+
+  // Save theme to SharedPreferences when it changes
+  Future<void> toggleTheme(ThemeMode mode) async {
     _themeMode = mode;
     notifyListeners();
+
+    // Save to SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(THEME_KEY, mode.toString());
+
     print('Theme changed to: ${mode.toString()}'); // Print the current theme
   }
 

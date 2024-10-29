@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:hpc_students/Screen/menu/profile_card.dart'; // Import ProfileCard
-import 'package:hpc_students/Screen/menu/grid_button.dart'; // Import GridButton
+import 'package:hpc_students/Screen/menu/profile_card.dart';
+import 'package:hpc_students/Screen/menu/grid_button.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../include/theme_provider.dart'; // Import ThemeProvider
-import 'package:hpc_students/Screen/menu/data_service.dart'; // Import the new data service
-import 'package:hpc_students/Screen/menu/navigation_service.dart'; // Import the new navigation service
-import 'package:hpc_students/Screen/menu/dialog_service.dart'; // Import the new dialog service
+import '../../include/theme_provider.dart';
+import 'package:hpc_students/Screen/menu/data_service.dart';
+import 'package:hpc_students/Screen/menu/navigation_service.dart';
+import 'package:hpc_students/Screen/menu/dialog_service.dart';
+import 'package:hpc_students/Screen/settingScreen.dart';
 
 class MenuScreen extends StatefulWidget {
   @override
@@ -259,29 +260,14 @@ class _MenuScreenState extends State<MenuScreen> {
         ),
         backgroundColor: Color(0xFF2d59a4),
         actions: [
-          PopupMenuButton<ThemeMode>(
-            icon: Icon(
-              themeProvider.themeMode == ThemeMode.dark
-                  ? Icons.wb_sunny // Sun icon for light theme
-                  : Icons.nights_stay, // Moon icon for dark theme
-            ),
-            onSelected: (ThemeMode newValue) {
-              themeProvider.toggleTheme(newValue);
+          IconButton(
+            icon: Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => SettingScreen()),
+              );
             },
-            itemBuilder: (BuildContext context) => [
-              PopupMenuItem(
-                value: ThemeMode.light,
-                child: Text('Sáng'),
-              ),
-              PopupMenuItem(
-                value: ThemeMode.dark,
-                child: Text('Tối'),
-              ),
-              PopupMenuItem(
-                value: ThemeMode.system,
-                child: Text('Hệ thống'),
-              ),
-            ],
           ),
         ],
       ),
