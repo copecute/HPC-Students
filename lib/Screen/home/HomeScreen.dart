@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:xml/xml.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
@@ -475,6 +476,74 @@ class _HomeScreenState extends State<HomeScreen> {
                               },
                             ),
                     ),
+              Center(
+                child: Container(
+                  margin: EdgeInsets.all(8),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Nhà xuất bản: HPC Students',
+                          style: TextStyle(
+                            fontSize: 14,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Chịu trách nhiệm nội dung: copecute',
+                          style: TextStyle(
+                            fontSize: 14,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 12),
+                        Container(
+                          width: MediaQuery.of(context).size.width * 0.8,
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              final Uri url = Uri.parse(
+                                  'https://hpc-students.blogspot.com/p/contact-us.html');
+                              try {
+                                if (!await launchUrl(url,
+                                    mode: LaunchMode.externalApplication)) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content: Text('Không thể mở liên kết')),
+                                  );
+                                }
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text(
+                                          'Có lỗi xảy ra khi mở liên kết')),
+                                );
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFF2d59a4),
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(25),
+                              ),
+                              textStyle: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            child: Text('Liên hệ với chúng tôi'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              SizedBox(height: 20),
             ],
           ),
         ),

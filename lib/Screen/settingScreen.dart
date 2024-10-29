@@ -209,6 +209,7 @@ class _SettingScreenState extends State<SettingScreen> {
                 _saveSettings();
               });
             },
+            activeColor: Color(0xFF2d59a4),
           ),
           Divider(),
 
@@ -223,6 +224,7 @@ class _SettingScreenState extends State<SettingScreen> {
                 _saveSettings();
               });
             },
+            activeColor: Color(0xFF2d59a4),
           ),
           Divider(),
 
@@ -253,10 +255,20 @@ class _SettingScreenState extends State<SettingScreen> {
           // Support & Feedback
           ListTile(
             title: Text('Hỗ trợ & Phản hồi'),
-            subtitle: Text('Liên hệ với chúng tôi'),
+            subtitle: Text('Liên hệ với chúng tôi qua email'),
             onTap: () {
               _launchURL(
                   'mailto:hpc@minhgiang.pro?subject=Hỗ trợ & Phản hồi - HPC Students');
+            },
+          ),
+          Divider(),
+
+          // liên hệ
+          ListTile(
+            title: Text('Liên hệ'),
+            subtitle: Text('Liên hệ với chúng tôi qua website'),
+            onTap: () {
+              _launchURL('https://hpc-students.blogspot.com/p/contact-us.html');
             },
           ),
           Divider(),

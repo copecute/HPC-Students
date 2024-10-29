@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 import 'package:xml/xml.dart';
 import 'blogDetailScreen.dart';
 import 'package:hpc_students/include/config.dart';
@@ -180,7 +181,7 @@ class _BlogScreenState extends State<BlogScreen> {
         });
 
         // Ghi chú: In ra số lượng bài viết và tiêu đề của chúng
-        print('Tổng số bài viết: $_totalPosts');
+        print('Tổng số bài vi��t: $_totalPosts');
         for (var entry in entries) {
           final title = entry.findElements('title').single.text;
         }
@@ -232,6 +233,12 @@ class _BlogScreenState extends State<BlogScreen> {
     }
   }
 
+  void _showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -276,9 +283,11 @@ class _BlogScreenState extends State<BlogScreen> {
           children: [
             DrawerHeader(
               child: Container(
+                height:
+                    double.infinity, // Đảm bảo container chiếm hết chiều cao
                 child: Column(
                   mainAxisAlignment:
-                      MainAxisAlignment.center, // Căn giữa theo chiều dọc
+                      MainAxisAlignment.spaceEvenly, // Phân bố không gian đều
                   children: [
                     Text(
                       'HPC Students News',
@@ -288,20 +297,50 @@ class _BlogScreenState extends State<BlogScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 16), // Khoảng cách giữa các dòng
-                    Text(
-                      'Nhà xuất bản: HPC Students',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                      ),
+                    Column(
+                      children: [
+                        Text(
+                          'Nhà xuất bản: HPC Students',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Chịu trách nhiệm nội dung: copecute',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(height: 8), // Khoảng cách giữa các dòng
-                    Text(
-                      'Chịu trách nhiệm nội dung: copecute',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
+                    Container(
+                      width: double.infinity, // Nút chiếm toàn bộ chiều rộng
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          final Uri url = Uri.parse(
+                              'https://hpc-students.blogspot.com/p/contact-us.html');
+                          if (!await launchUrl(url)) {
+                            _showSnackBar(context, 'Không thể mở Liên hệ');
+                          }
+                        },
+                        child: Text('Liên hệ với chúng tôi'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color.fromARGB(255, 0, 40, 108),
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(
+                              vertical: 15), // Tăng chiều cao nút
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                                25), // Bo tròn góc nhiều hơn
+                          ),
+                          textStyle: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -312,7 +351,8 @@ class _BlogScreenState extends State<BlogScreen> {
               ),
             ),
             ListTile(
-              title: Text('Chuyên mục'),
+              title: Text('Chuyên mục',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
             ),
             Divider(), // Thêm đường kẻ để phân tách
             ListTile(
