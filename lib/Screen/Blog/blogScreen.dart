@@ -276,9 +276,35 @@ class _BlogScreenState extends State<BlogScreen> {
           children: [
             DrawerHeader(
               child: Container(
-                child: Text(
-                  'Chuyên Mục',
-                  style: TextStyle(color: Colors.white, fontSize: 24),
+                child: Column(
+                  mainAxisAlignment:
+                      MainAxisAlignment.center, // Căn giữa theo chiều dọc
+                  children: [
+                    Text(
+                      'HPC Students News',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 16), // Khoảng cách giữa các dòng
+                    Text(
+                      'Nhà xuất bản: HPC Students',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                    ),
+                    SizedBox(height: 8), // Khoảng cách giữa các dòng
+                    Text(
+                      'Chịu trách nhiệm nội dung: copecute',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               decoration: BoxDecoration(
@@ -286,30 +312,33 @@ class _BlogScreenState extends State<BlogScreen> {
               ),
             ),
             ListTile(
-              title: Text('Tất cả bài viết'), // Mục Tất cả bài viết
+              title: Text('Chuyên mục'),
+            ),
+            Divider(), // Thêm đường kẻ để phân tách
+            ListTile(
+              title: Text('Tất cả bài viết'),
               onTap: () {
                 setState(() {
-                  _currentSearchQuery = ''; // Xóa truy vấn tìm kiếm
-                  _selectedCategory = null; // Xóa danh mục đã chọn
-                  _currentPage = 1; // Đặt lại về trang đầu tiên
+                  _currentSearchQuery = '';
+                  _selectedCategory = null;
+                  _currentPage = 1;
                 });
-                _fetchBlogPosts(); // Lấy tất cả bài viết
-                Navigator.pop(context); // Đóng drawer
+                _fetchBlogPosts();
+                Navigator.pop(context);
               },
             ),
             ..._categories.map((category) {
               return ListTile(
                 title: Text(category),
+                selected: _selectedCategory == category,
                 onTap: () {
                   setState(() {
-                    _currentPage =
-                        1; // Đặt lại về trang đầu tiên khi chọn danh mục mới
-                    _selectedCategory = category; // Đặt danh mục đã chọn
-                    _currentSearchQuery = ''; // Xóa truy vấn tìm kiếm
+                    _currentPage = 1;
+                    _selectedCategory = category;
+                    _currentSearchQuery = '';
                   });
-                  _fetchBlogPosts(
-                      category: category); // Lấy bài viết cho danh mục đã chọn
-                  Navigator.pop(context); // Đóng drawer
+                  _fetchBlogPosts(category: category);
+                  Navigator.pop(context);
                 },
               );
             }).toList(),

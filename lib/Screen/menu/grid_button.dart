@@ -47,27 +47,27 @@ class GridButton extends StatelessWidget {
     return [
       {
         'id': 1,
-        'icon': Icons.group,
-        'label': 'Danh sách lớp',
-        'color': Colors.orange
-      },
-      {
-        'id': 2,
         'icon': Icons.add_chart,
         'label': 'Kết quả học tập',
         'color': Colors.green
       },
       {
-        'id': 3,
+        'id': 2,
         'icon': Icons.car_rental,
         'label': 'Vé ra vào',
         'color': Colors.red
       },
       {
-        'id': 4,
+        'id': 3,
         'icon': Icons.calendar_today,
         'label': 'Thời khoá biểu',
         'color': Colors.blue
+      },
+      {
+        'id': 4,
+        'icon': Icons.score,
+        'label': 'Điểm rèn luyện',
+        'color': Colors.deepOrange
       },
       {
         'id': 5,
@@ -77,64 +77,63 @@ class GridButton extends StatelessWidget {
       },
       {
         'id': 6,
-        'icon': Icons.score,
-        'label': 'Điểm rèn luyện',
-        'color': Colors.deepOrange
-      },
-      {
-        'id': 7,
         'icon': Icons.image,
         'label': 'Chia sẻ ảnh',
         'color': Colors.deepOrange
       },
       {
-        'id': 8,
+        'id': 7,
         'icon': Icons.sentiment_satisfied_alt_outlined,
         'label': 'Lớp học Online',
         'color': Colors.teal
       },
       {
-        'id': 9,
+        'id': 8,
         'icon': Icons.stars,
         'label': 'HPC Ranking',
         'color': Colors.indigo
       },
       {
-        'id': 10,
+        'id': 9,
         'icon': Icons.monetization_on,
         'label': 'Học phí',
         'color': Colors.brown
       },
       {
-        'id': 11,
+        'id': 10,
         'icon': Icons.rate_review,
         'label': 'HPC Confession',
         'color': Colors.purple
       },
       {
-        'id': 12,
+        'id': 11,
         'icon': Icons.mark_email_unread_sharp,
         'label': 'Quản lý yêu cầu',
         'color': Colors.teal
       },
       {
-        'id': 13,
+        'id': 12,
         'icon': Icons.newspaper,
         'label': 'Bài viết',
         'color': Colors.blueGrey
       },
       {
-        'id': 14,
+        'id': 13,
         'icon': Icons.pets,
         'label': 'CLUB Thịt Chó Bách Khoa',
         'color': Colors.red
       },
       {
-        'id': 15,
+        'id': 14,
         'icon': Icons.card_membership_sharp,
         'label': 'Tra cứu văn bằng',
         'color': Colors.amber
-
+      },
+      {
+        'id': 15,
+        'icon': Icons.settings,
+        'label': 'Cài đặt',
+        'color': Colors.grey
       },
     ];
   }

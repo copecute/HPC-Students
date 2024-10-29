@@ -262,6 +262,7 @@ class _MenuScreenState extends State<MenuScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.settings),
+            color: Colors.white,
             onPressed: () {
               Navigator.push(
                 context,

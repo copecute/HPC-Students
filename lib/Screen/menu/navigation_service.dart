@@ -12,38 +12,43 @@ import 'package:hpc_students/Screen/timNguoiYeu/chat.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_database/firebase_database.dart';
 
+import '../settingScreen.dart';
 import '../yeuCau/traCuuYeuCau.dart';
 
 Future<void> handleNavigation(BuildContext context, int id) async {
   switch (id) {
-    case 2:
+    case 1:
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => TraDiemScreen()),
       );
       break;
-    case 3:
+    case 2:
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => VeXeScreen()),
       );
       break;
-    case 4:
+    case 3:
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => TraCuuLichHocScreen()),
       );
       break;
+    case 4:
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => TraCuuDiemRenLuyenScreen()),
+      );
+      break;
     case 5:
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? username =
-          prefs.getString('username'); // Get username from SharedPreferences
+      String? username = prefs.getString('username');
 
       if (username != null) {
-        // Navigate to ChatScreen and add user to queue
         final DatabaseReference queueRef =
             FirebaseDatabase.instance.ref('queue');
-        await queueRef.push().set(username); // Add user to queue
+        await queueRef.push().set(username);
 
         Navigator.push(
           context,
@@ -58,50 +63,56 @@ Future<void> handleNavigation(BuildContext context, int id) async {
         showSnackBar(context, 'Vui lòng đăng nhập lại!');
       }
       break;
-    case 6:
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => TraCuuDiemRenLuyenScreen()),
-      );
-      break;
-    case 9:
+    case 8:
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => RankScreen()),
       );
       break;
-    case 10:
+    case 9:
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => TraCuuHocPhiScreen()),
       );
       break;
-    case 12:
+    case 10:
+      final Uri url = Uri.parse('https://www.facebook.com/profile.php?id=61553425276826');
+      if (!await launchUrl(url)) {
+        throw 'Không thể mở HPC Confession';
+      }
+      break;
+    case 11:
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => TraCuuYeuCauScreen()),
       );
       break;
-    case 13:
+    case 12:
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => BlogScreen()),
       );
       break;
-    case 14:
+    case 13:
       final Uri url = Uri.parse('https://zalo.me/g/uttoza177');
       if (!await launchUrl(url)) {
         throw 'Không thể mở CLUB Thịt Chó Bách Khoa';
       }
       break;
-    case 15:
+    case 14:
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => TraCuuVanBangScreen()),
       );
       break;
+    case 15:
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => SettingScreen()),
+      );
+      break;
     default:
-      showSnackBar(context, 'Chưa có chức năng này!');
+      showSnackBar(context, 'Chưa có chức năng này! hãy đợi phiên bản sau');
   }
 }
 

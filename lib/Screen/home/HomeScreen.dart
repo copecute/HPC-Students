@@ -258,6 +258,7 @@ class _HomeScreenState extends State<HomeScreen> {
               themeProvider.themeMode == ThemeMode.dark
                   ? Icons.wb_sunny // Sun icon for light theme
                   : Icons.nights_stay, // Moon icon for dark theme
+              color: Colors.white, // Ensure the icon is white
             ),
             onSelected: (ThemeMode newValue) {
               themeProvider.toggleTheme(newValue);
