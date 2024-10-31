@@ -3,7 +3,7 @@ description: "HPC Students là ứng dụng hữu ích dành cho sinh viên trư
 
 publish_to: none
 
-version: 1.1.1+4
+version: 1.1.1+6
 
 environment:
   sdk: ^3.5.3
@@ -35,11 +35,12 @@ dependencies:
   path: ^1.9.0
   permission_handler: ^11.3.1
   webview_flutter: ^4.9.0
-  nfc_manager: ^3.5.0
   flutter_inappwebview: ^6.1.4
   cached_network_image: ^3.4.1
   flutter_localization: ^0.2.2
   curved_labeled_navigation_bar: ^2.0.2
+  image_picker: ^1.1.2
+  dio: ^5.7.0
 
 flutter_localizations:
   sdk: flutter

@@ -164,7 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('hoTen', _hoTen);
     await prefs.setString('trangThai', _trangThai);
-    await prefs.setString('maSinhVien', _maSinhVien); // Đảm bảo lưu maSinhVien
+    await prefs.setString('maSinhVien', _maSinhVien);
     await prefs.setString('tinChiTichLuy', _tinChiTichLuy);
     await prefs.setString('tbcTichLuy', _tbcTichLuy);
     await prefs.setString('xepLoaiHT', _xepLoaiHT);

@@ -66,8 +66,9 @@ class _BlogScreenState extends State<BlogScreen> {
         print(
             'Đã tìm thấy dữ liệu đã lưu.'); // Ghi chú: Chỉ ra rằng dữ liệu đã lưu được tìm thấy
         try {
-          print(
+          /* print(
               'Dữ liệu đã lưu: $cachedData'); // In ra dữ liệu đã lưu để kiểm tra
+           */
           final document = XmlDocument.parse(cachedData); // Phân tích XML
           final entries = document.findAllElements('entry');
           setState(() {

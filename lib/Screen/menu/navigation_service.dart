@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hpc_students/Screen/TraCuuDiemRenLuyenScreen.dart';
+import 'package:hpc_students/Screen/imgur/homeImgur.dart';
 import 'package:hpc_students/Screen/kiemSoatTruyCap/veXe.dart';
 import 'package:hpc_students/Screen/traCuuVanBang.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -63,6 +64,18 @@ Future<void> handleNavigation(BuildContext context, int id) async {
         showSnackBar(context, 'Vui lòng đăng nhập lại!');
       }
       break;
+    case 6:
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => HomeImgurScreen()),
+      );
+      break;
+    case 7:
+      final Uri url = Uri.parse('https://hoctructuyen.bachkhoahanoi.edu.vn/');
+      if (!await launchUrl(url)) {
+        throw 'Không thể mở hệ thống học trực tuyến';
+      }
+      break;
     case 8:
       Navigator.push(
         context,
@@ -76,7 +89,8 @@ Future<void> handleNavigation(BuildContext context, int id) async {
       );
       break;
     case 10:
-      final Uri url = Uri.parse('https://www.facebook.com/profile.php?id=61553425276826');
+      final Uri url =
+          Uri.parse('https://www.facebook.com/profile.php?id=61553425276826');
       if (!await launchUrl(url)) {
         throw 'Không thể mở HPC Confession';
       }
