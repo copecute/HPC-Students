@@ -180,13 +180,65 @@ class _OrderScreenState extends State<OrderScreen> {
     }
   }
 
-  Widget _buildOrderDetails(Map<String, dynamic> orderItems) {
+  Widget _buildOrderDetails(Map<String, dynamic> order) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final orderItems = order['ORDER'];
+    final ordererInfo = order['OrdererInformation'];
+    final note = order['Note'];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Thông tin người đặt
+        Text(
+          'Thông tin người đặt:',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: isDarkMode ? Colors.white : Colors.black,
+          ),
+        ),
+        SizedBox(height: 8),
+        Row(
+          children: [
+            Icon(
+              Icons.person_outline,
+              size: 16,
+              color: isDarkMode ? Colors.white70 : null,
+            ),
+            SizedBox(width: 8),
+            Text(
+              ordererInfo['fullname'] ?? '',
+              style: TextStyle(
+                color: isDarkMode ? Colors.white : Colors.black,
+              ),
+            ),
+          ],
+        ),
+        Row(
+          children: [
+            Icon(
+              Icons.phone_outlined,
+              size: 16,
+              color: isDarkMode ? Colors.white70 : null,
+            ),
+            SizedBox(width: 8),
+            Text(
+              ordererInfo['phoneNumber'] ?? '',
+              style: TextStyle(
+                color: isDarkMode ? Colors.white : Colors.black,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 16),
+
+        // Chi tiết đơn hàng
         Text(
           'Chi tiết đơn hàng:',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: isDarkMode ? Colors.white : Colors.black,
+          ),
         ),
         SizedBox(height: 8),
         ...orderItems.values.map((item) {
@@ -211,12 +263,17 @@ class _OrderScreenState extends State<OrderScreen> {
                     children: [
                       Text(
                         product['NAME'],
-                        style: TextStyle(fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          color: isDarkMode ? Colors.white : Colors.black,
+                        ),
                       ),
                       Text(
                         '${_formatPrice(product['Price'])} x ${product['Quantity']}',
                         style: TextStyle(
-                          color: Theme.of(context).textTheme.bodyMedium?.color,
+                          color: isDarkMode
+                              ? Colors.white70
+                              : Theme.of(context).textTheme.bodyMedium?.color,
                           fontSize: 13,
                         ),
                       ),
@@ -225,12 +282,44 @@ class _OrderScreenState extends State<OrderScreen> {
                 ),
                 Text(
                   _formatPrice(product['Price'] * product['Quantity']),
-                  style: TextStyle(fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: isDarkMode ? Colors.white : Colors.black,
+                  ),
                 ),
               ],
             ),
           );
         }).toList(),
+
+        // Ghi chú
+        if (note != null && note.isNotEmpty) ...[
+          SizedBox(height: 16),
+          Text(
+            'Ghi chú:',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isDarkMode ? Colors.white : Colors.black,
+            ),
+          ),
+          SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(
+                Icons.note_outlined,
+                size: 16,
+                color: isDarkMode ? Colors.white70 : null,
+              ),
+              SizedBox(width: 8),
+              Text(
+                note,
+                style: TextStyle(
+                  color: isDarkMode ? Colors.white : Colors.black,
+                ),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }
@@ -319,8 +408,6 @@ class _OrderScreenState extends State<OrderScreen> {
                                   delegate: SliverChildBuilderDelegate(
                                     (context, index) {
                                       final order = orders[index];
-                                      final orderItems = order['ORDER'];
-
                                       return Card(
                                         margin: EdgeInsets.only(
                                             bottom: MediaQuery.of(context)
@@ -380,7 +467,7 @@ class _OrderScreenState extends State<OrderScreen> {
                                                 ],
                                               ),
                                               SizedBox(height: 16),
-                                              _buildOrderDetails(orderItems),
+                                              _buildOrderDetails(order),
                                               Divider(height: 24),
                                               Row(
                                                 mainAxisAlignment:
@@ -398,8 +485,10 @@ class _OrderScreenState extends State<OrderScreen> {
                                                     _formatPrice(
                                                         order['UnitPrice']),
                                                     style: TextStyle(
-                                                      color: Theme.of(context)
-                                                          .primaryColor,
+                                                      color: isDarkMode
+                                                          ? Colors.white
+                                                          : Theme.of(context)
+                                                              .primaryColor,
                                                       fontWeight:
                                                           FontWeight.bold,
                                                       fontSize: 16,
