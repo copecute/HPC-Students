@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hpc_students/Screen/TraCuuDiemRenLuyenScreen.dart';
+import 'package:hpc_students/Screen/canteenShop/canteenScreen.dart';
 import 'package:hpc_students/Screen/imgur/homeImgur.dart';
 import 'package:hpc_students/Screen/kiemSoatTruyCap/veXe.dart';
 import 'package:hpc_students/Screen/traCuuVanBang.dart';
@@ -89,37 +90,43 @@ Future<void> handleNavigation(BuildContext context, int id) async {
       );
       break;
     case 10:
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => CanteenScreen()),
+      );
+      break;
+    case 11:
       final Uri url =
           Uri.parse('https://www.facebook.com/profile.php?id=61553425276826');
       if (!await launchUrl(url)) {
         throw 'Không thể mở HPC Confession';
       }
       break;
-    case 11:
+    case 12:
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => TraCuuYeuCauScreen()),
       );
       break;
-    case 12:
+    case 13:
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => BlogScreen()),
       );
       break;
-    case 13:
+    case 14:
       final Uri url = Uri.parse('https://zalo.me/g/uttoza177');
       if (!await launchUrl(url)) {
         throw 'Không thể mở CLUB Thịt Chó Bách Khoa';
       }
       break;
-    case 14:
+    case 15:
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => TraCuuVanBangScreen()),
       );
       break;
-    case 15:
+    case 16:
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => SettingScreen()),

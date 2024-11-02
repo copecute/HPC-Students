@@ -15,6 +15,7 @@ import 'include/theme_provider.dart'; // Import ThemeProvider
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:curved_labeled_navigation_bar/curved_navigation_bar.dart'; // Import CurvedNavigationBar
 import 'package:curved_labeled_navigation_bar/curved_navigation_bar_item.dart'; // Import CurvedNavigationBarItem
+import 'package:hpc_students/Screen/canteenShop/cart_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Ensure binding is initialized
@@ -29,6 +30,7 @@ void main() async {
         ChangeNotifierProvider(
             create: (_) =>
                 ThemeProvider()), // Ensure ThemeProvider is available
+        ChangeNotifierProvider(create: (_) => CartProvider()), // Thêm dòng này
       ],
       child: MyApp(),
     ),

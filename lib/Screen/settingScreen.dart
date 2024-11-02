@@ -16,12 +16,14 @@ class _SettingScreenState extends State<SettingScreen> {
   bool _isLoading = true;
   bool _notificationsEnabled = true;
   bool _autoLoginEnabled = true;
+  bool _isLoggedIn = false;
 
   @override
   void initState() {
     super.initState();
     _loadSettings();
     _getAppVersion();
+    _checkLoginStatus();
   }
 
   Future<void> _loadSettings() async {
@@ -153,6 +155,29 @@ class _SettingScreenState extends State<SettingScreen> {
         );
       }
     }
+  }
+
+  Future<void> _checkLoginStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? cookie = prefs.getString('cookie');
+    String? username = prefs.getString('username');
+    String? password = prefs.getString('password');
+
+    setState(() {
+      // Chỉ coi là đã đăng nhập khi có đủ cả cookie và thông tin đăng nhập
+      _isLoggedIn = cookie != null &&
+          cookie.isNotEmpty &&
+          username != null &&
+          username.isNotEmpty &&
+          password != null &&
+          password.isNotEmpty;
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _checkLoginStatus(); // Kiểm tra lại trạng thái đăng nhập khi màn hình được focus
   }
 
   @override
@@ -293,19 +318,22 @@ class _SettingScreenState extends State<SettingScreen> {
           ),
           Divider(),
 
-          // Logout Button
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 15),
+          // Chỉ hiển thị nút đăng xuất nếu đã đăng nhập
+          if (_isLoggedIn) ...[
+            Divider(),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 15),
+                ),
+                onPressed: _showLogoutDialog,
+                child: Text('Đăng xuất'),
               ),
-              onPressed: _showLogoutDialog,
-              child: Text('Đăng xuất'),
             ),
-          ),
+          ],
         ],
       ),
     );
