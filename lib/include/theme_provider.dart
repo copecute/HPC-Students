@@ -40,29 +40,42 @@ class ThemeProvider with ChangeNotifier {
   ThemeData get darkTheme {
     return ThemeData(
       brightness: Brightness.dark,
-      primaryColor: Color(0xFF16253f), // Primary color for dark theme
-      scaffoldBackgroundColor: Color(0xFF282a36), // Background color
+      primaryColor: Color(0xFF16253f),
+      scaffoldBackgroundColor: Color(0xFF282a36),
       appBarTheme: AppBarTheme(
-        // backgroundColor: Color(0xFF16253f), // AppBar color
-        iconTheme: IconThemeData(color: Colors.white), // Icon color in AppBar
-        titleTextStyle:
-            TextStyle(color: Colors.white, fontSize: 20), // Title text style
+        backgroundColor: Colors.transparent,
+        iconTheme: IconThemeData(color: Colors.white),
+        titleTextStyle: TextStyle(color: Colors.white, fontSize: 20),
       ),
       textTheme: TextTheme(
-        bodyLarge: TextStyle(color: Colors.white), // Body text color
-        bodyMedium: TextStyle(color: Colors.white70), // Secondary text color
-        displayLarge: TextStyle(color: Colors.white), // Headline text color
+        bodyLarge: TextStyle(color: Colors.white),
+        bodyMedium: TextStyle(color: Colors.white70),
+        displayLarge: TextStyle(color: Colors.white),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.grey[800], // Input field background color
-        labelStyle: TextStyle(color: Colors.white), // Label color
+        fillColor: Colors.grey[800],
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white), // Border color
+          borderRadius: BorderRadius.circular(50),
+          borderSide: BorderSide(color: Colors.grey),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(50),
+          borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(50),
+          borderSide: BorderSide(color: Colors.white70),
+        ),
+        labelStyle: TextStyle(color: Colors.white),
+        hintStyle: TextStyle(color: Colors.white70),
+      ),
+      iconTheme: IconThemeData(color: Colors.white),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: Colors.white70,
         ),
       ),
-      iconTheme: IconThemeData(color: Colors.white), // Icon color
     );
   }
 
@@ -70,29 +83,42 @@ class ThemeProvider with ChangeNotifier {
   ThemeData get lightTheme {
     return ThemeData(
       brightness: Brightness.light,
-      primaryColor: Color(0xFF2d59a4), // Primary color for light theme
-      scaffoldBackgroundColor: Colors.white, // Background color
+      primaryColor: Color(0xFF2d59a4),
+      scaffoldBackgroundColor: Colors.white,
       appBarTheme: AppBarTheme(
-        // backgroundColor: Color(0xFF2d59a4), // AppBar color
-        iconTheme: IconThemeData(color: Colors.black), // Icon color in AppBar
-        titleTextStyle:
-            TextStyle(color: Colors.black, fontSize: 20), // Title text style
+        backgroundColor: Colors.transparent,
+        iconTheme: IconThemeData(color: Colors.black),
+        titleTextStyle: TextStyle(color: Colors.black, fontSize: 20),
       ),
       textTheme: TextTheme(
-        bodyLarge: TextStyle(color: Colors.black), // Body text color
-        bodyMedium: TextStyle(color: Colors.black54), // Secondary text color
-        displayLarge: TextStyle(color: Colors.black), // Headline text color
+        bodyLarge: TextStyle(color: Colors.black),
+        bodyMedium: TextStyle(color: Colors.black54),
+        displayLarge: TextStyle(color: Colors.black),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white, // Input field background color
-        labelStyle: TextStyle(color: Colors.black), // Label color
+        fillColor: Color.fromARGB(255, 188, 187, 187),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.black), // Border color
+          borderRadius: BorderRadius.circular(50),
+          borderSide: BorderSide(color: Colors.grey),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(50),
+          borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(50),
+          borderSide: BorderSide(color: Color(0xFF2d59a4)),
+        ),
+        labelStyle: TextStyle(color: Colors.black87),
+        hintStyle: TextStyle(color: Colors.black54),
+      ),
+      iconTheme: IconThemeData(color: Colors.black87),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: Colors.black54,
         ),
       ),
-      iconTheme: IconThemeData(color: Colors.black), // Icon color
     );
   }
 }

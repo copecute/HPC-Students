@@ -101,36 +101,42 @@ class GridButton extends StatelessWidget {
       },
       {
         'id': 10,
+        'icon': Icons.food_bank,
+        'label': 'Đặt đồ căng tin',
+        'color': Colors.yellow
+      },
+      {
+        'id': 11,
         'icon': Icons.rate_review,
         'label': 'HPC Confession',
         'color': Colors.purple
       },
       {
-        'id': 11,
+        'id': 12,
         'icon': Icons.mark_email_unread_sharp,
         'label': 'Quản lý yêu cầu',
         'color': Colors.teal
       },
       {
-        'id': 12,
+        'id': 13,
         'icon': Icons.newspaper,
         'label': 'Bài viết',
         'color': Colors.blueGrey
       },
       {
-        'id': 13,
+        'id': 14,
         'icon': Icons.pets,
         'label': 'CLUB Thịt Chó Bách Khoa',
         'color': Colors.red
       },
       {
-        'id': 14,
+        'id': 15,
         'icon': Icons.card_membership_sharp,
         'label': 'Tra cứu văn bằng',
         'color': Colors.amber
       },
       {
-        'id': 15,
+        'id': 16,
         'icon': Icons.settings,
         'label': 'Cài đặt',
         'color': Colors.grey
