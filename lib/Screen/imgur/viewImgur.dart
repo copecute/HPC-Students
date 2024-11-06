@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hpc_students/include/config.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:dio/dio.dart';
 import 'dart:io';
 
@@ -82,10 +81,9 @@ class _ViewImgurScreenState extends State<ViewImgurScreen> {
 
       print("Handling like for image STT: ${widget.imageData['STT']}");
 
-      final url =
-          'https://script.google.com/macros/s/AKfycbyG9y5g_PXeKbIDm_y6t2MyVzH9KW6u2FKPOrwyX6DPcooay1T9Olm9EdXnS1d4jAhC/exec';
+      final url = SpreadsheetAPI.imgur;
       final body = {
-        'copecute': '$ggsapiKey',
+        'copecute': SpreadApiKey,
         'action': 'likeImage',
         'stt': widget.imageData['STT'].toString(),
         'username': savedUsername,
@@ -190,10 +188,9 @@ class _ViewImgurScreenState extends State<ViewImgurScreen> {
 
       print("Deleting image STT: ${widget.imageData['STT']}");
 
-      final url =
-          'https://script.google.com/macros/s/AKfycbyG9y5g_PXeKbIDm_y6t2MyVzH9KW6u2FKPOrwyX6DPcooay1T9Olm9EdXnS1d4jAhC/exec';
+      final url = SpreadsheetAPI.imgur;
       final body = {
-        'copecute': '$ggsapiKey',
+        'copecute': SpreadApiKey,
         'action': 'deleteImage',
         'stt': widget.imageData['STT'].toString(),
         'username': username,
@@ -272,10 +269,9 @@ class _ViewImgurScreenState extends State<ViewImgurScreen> {
 
       print("Adding comment for image STT: ${widget.imageData['STT']}");
 
-      final url =
-          'https://script.google.com/macros/s/AKfycbyG9y5g_PXeKbIDm_y6t2MyVzH9KW6u2FKPOrwyX6DPcooay1T9Olm9EdXnS1d4jAhC/exec';
+      final url = SpreadsheetAPI.imgur;
       final body = {
-        'copecute': '$ggsapiKey',
+        'copecute': SpreadApiKey,
         'action': 'commentImage',
         'stt': widget.imageData['STT'].toString(),
         'username': savedUsername,
@@ -476,10 +472,9 @@ class _ViewImgurScreenState extends State<ViewImgurScreen> {
                                   return;
                                 }
 
-                                final url =
-                                    'https://script.google.com/macros/s/AKfycbyG9y5g_PXeKbIDm_y6t2MyVzH9KW6u2FKPOrwyX6DPcooay1T9Olm9EdXnS1d4jAhC/exec';
+                                final url = SpreadsheetAPI.imgur;
                                 final body = {
-                                  'copecute': '$ggsapiKey',
+                                  'copecute': SpreadApiKey,
                                   'action': 'reportImage',
                                   'stt': widget.imageData['STT'].toString(),
                                   'username': savedUsername,

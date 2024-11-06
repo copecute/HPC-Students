@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hpc_students/Screen/StudentMarket/studentMarketScreen.dart';
 import 'package:hpc_students/Screen/TraCuuDiemRenLuyenScreen.dart';
 import 'package:hpc_students/Screen/canteenShop/canteenScreen.dart';
 import 'package:hpc_students/Screen/imgur/homeImgur.dart';
@@ -11,6 +12,7 @@ import 'package:hpc_students/Screen/traCuuHocPhiScreen.dart';
 import 'package:hpc_students/Screen/lichHoc/traCuuLichHocScreen.dart';
 import 'package:hpc_students/Screen/traDiemScreen.dart';
 import 'package:hpc_students/Screen/timNguoiYeu/chat.dart';
+import 'package:hpc_students/Screen/LibraryBooks/libraryScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_database/firebase_database.dart';
 
@@ -127,6 +129,18 @@ Future<void> handleNavigation(BuildContext context, int id) async {
       );
       break;
     case 16:
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => LibraryScreen()),
+      );
+      break;
+    case 17:
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => StudentMarketScreen()),
+      );
+      break;
+    case 18:
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => SettingScreen()),

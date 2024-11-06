@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:hpc_students/include/config.dart';
 import 'package:provider/provider.dart';
-import 'package:hpc_students/include/theme_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hpc_students/Screen/canteenShop/canteenViewProduct.dart';
 import 'package:hpc_students/Screen/canteenShop/cart_provider.dart';
 import 'package:hpc_students/Screen/canteenShop/cartScreen.dart';
 import 'package:hpc_students/Screen/canteenShop/orderScreen.dart';
+import 'package:hpc_students/include/config.dart';
 import 'dart:async';
 
 class CanteenScreen extends StatefulWidget {
@@ -51,12 +50,11 @@ class _CanteenScreenState extends State<CanteenScreen> {
 
       print("Fetching products for page: $currentPage");
 
-      final url =
-          'https://script.google.com/macros/s/AKfycbwLIYesYJgBbpOFWhCPxfpMSxnFrZZSbv9iMorkPyG0b8HkRKv6RLpqlsVrkEk5vGoh/exec';
+      final url = SpreadsheetAPI.canteen;
 
       print('Fetching products from URL: $url');
       print('Request body: ${{
-        'copecute': 'MIiwxJTx8h3a3HLYvpYpWXsywFH71f5jYP1IQo8AMUwmZr9H7y',
+        'copecute': SpreadApiKey,
         'action': 'getProducts',
         'page': currentPage.toString(),
         'search': _searchController.text.trim(),
@@ -65,7 +63,7 @@ class _CanteenScreenState extends State<CanteenScreen> {
       final response = await http.post(
         Uri.parse(url),
         body: {
-          'copecute': 'MIiwxJTx8h3a3HLYvpYpWXsywFH71f5jYP1IQo8AMUwmZr9H7y',
+          'copecute': SpreadApiKey,
           'action': 'getProducts',
           'page': currentPage.toString(),
           'search': _searchController.text.trim(),

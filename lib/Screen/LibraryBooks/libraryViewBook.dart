@@ -2,60 +2,57 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:provider/provider.dart';
-import 'package:hpc_students/Screen/canteenShop/cart_provider.dart';
-import 'package:hpc_students/Screen/canteenShop/cartScreen.dart';
 import 'package:hpc_students/include/config.dart';
+import 'package:provider/provider.dart';
+import 'package:hpc_students/Screen/LibraryBooks/library_cart_provider.dart';
+import 'package:hpc_students/Screen/LibraryBooks/library_cart_screen.dart';
 
-class CanteenViewProduct extends StatefulWidget {
-  final Map<String, dynamic> productData;
+class LibraryViewBook extends StatefulWidget {
+  final Map<String, dynamic> bookData;
 
-  CanteenViewProduct({required this.productData});
+  LibraryViewBook({required this.bookData});
 
   @override
-  _CanteenViewProductState createState() => _CanteenViewProductState();
+  _LibraryViewBookState createState() => _LibraryViewBookState();
 }
 
-class _CanteenViewProductState extends State<CanteenViewProduct> {
+class _LibraryViewBookState extends State<LibraryViewBook> {
   bool isLoading = true;
   String errorMessage = '';
-  Map<String, dynamic> productDetail = {};
+  Map<String, dynamic> bookDetail = {};
 
   @override
   void initState() {
     super.initState();
-    print("Initializing CanteenViewProduct...");
-    _fetchProductDetail();
+    print("Initializing LibraryViewBook...");
+    _fetchBookDetail();
   }
 
-  String _formatPrice(dynamic price) {
-    if (price == null) return '0 đ';
-    return '${price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')} đ';
-  }
+  Future<void> _fetchBookDetail() async {
+    if (!mounted) return;
 
-  Future<void> _fetchProductDetail() async {
     try {
       setState(() {
         isLoading = true;
       });
 
-      print("Fetching product detail for STT: ${widget.productData['STT']}");
+      print("Fetching book detail for STT: ${widget.bookData['STT']}");
 
-      final url = SpreadsheetAPI.canteen;
+      final url = SpreadsheetAPI.libraryBooks;
 
-      print('Fetching product detail from URL: $url');
+      print('Fetching book detail from URL: $url');
       print('Request body: ${{
         'copecute': SpreadApiKey,
-        'action': 'getProduct',
-        'stt': widget.productData['STT'].toString()
+        'action': 'getBook',
+        'stt': widget.bookData['STT'].toString()
       }}');
 
       final response = await http.post(
         Uri.parse(url),
         body: {
           'copecute': SpreadApiKey,
-          'action': 'getProduct',
-          'stt': widget.productData['STT'].toString(),
+          'action': 'getBook',
+          'stt': widget.bookData['STT'].toString(),
         },
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -64,12 +61,14 @@ class _CanteenViewProductState extends State<CanteenViewProduct> {
 
       print("Response status: ${response.statusCode}");
 
+      if (!mounted) return;
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         print("Response data: $data");
 
         setState(() {
-          productDetail = data;
+          bookDetail = data;
           isLoading = false;
           errorMessage = '';
         });
@@ -78,12 +77,14 @@ class _CanteenViewProductState extends State<CanteenViewProduct> {
         final redirectUrl = response.headers['location'];
         if (redirectUrl != null) {
           final redirectResponse = await http.get(Uri.parse(redirectUrl));
+          if (!mounted) return;
+
           if (redirectResponse.statusCode == 200) {
             final data = json.decode(redirectResponse.body);
             print("Response data after redirect: $data");
 
             setState(() {
-              productDetail = data;
+              bookDetail = data;
               isLoading = false;
               errorMessage = '';
             });
@@ -98,18 +99,14 @@ class _CanteenViewProductState extends State<CanteenViewProduct> {
         });
       }
     } catch (e) {
-      print("Error fetching product detail: $e");
+      print("Error fetching book detail: $e");
+      if (!mounted) return;
+
       setState(() {
-        errorMessage = 'Có lỗi xảy ra khi tải thông tin sản phẩm.';
+        errorMessage = 'Có lỗi xảy ra khi tải thông tin sách.';
         isLoading = false;
       });
     }
-  }
-
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
   }
 
   @override
@@ -131,27 +128,32 @@ class _CanteenViewProductState extends State<CanteenViewProduct> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Chi tiết sản phẩm',
+          'Chi tiết sách',
           style: TextStyle(
             color: Theme.of(context).textTheme.titleLarge?.color,
           ),
         ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        systemOverlayStyle:
+            isDarkMode ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
         actions: [
           Stack(
             children: [
               IconButton(
                 icon: Icon(
-                  Icons.shopping_cart,
+                  Icons.shopping_basket,
                   color: Theme.of(context).iconTheme.color,
                 ),
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => CartScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => LibraryCartScreen()),
                   );
                 },
               ),
-              if (context.watch<CartProvider>().itemCount > 0)
+              if (context.watch<LibraryCartProvider>().itemCount > 0)
                 Positioned(
                   right: 0,
                   top: 0,
@@ -166,7 +168,7 @@ class _CanteenViewProductState extends State<CanteenViewProduct> {
                       minHeight: 20,
                     ),
                     child: Text(
-                      '${context.watch<CartProvider>().itemCount}',
+                      '${context.watch<LibraryCartProvider>().itemCount}',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -178,10 +180,6 @@ class _CanteenViewProductState extends State<CanteenViewProduct> {
             ],
           ),
         ],
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        systemOverlayStyle:
-            isDarkMode ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -190,7 +188,7 @@ class _CanteenViewProductState extends State<CanteenViewProduct> {
             AspectRatio(
               aspectRatio: 1,
               child: Image.network(
-                widget.productData['IMG'] ?? '',
+                bookDetail['IMG'] ?? widget.bookData['IMG'] ?? '',
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
@@ -206,8 +204,8 @@ class _CanteenViewProductState extends State<CanteenViewProduct> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    productDetail['NAME']?.toString() ??
-                        widget.productData['NAME'] ??
+                    bookDetail['NAME']?.toString() ??
+                        widget.bookData['NAME'] ??
                         '',
                     style: TextStyle(
                       fontSize: MediaQuery.of(context).size.width * 0.06,
@@ -215,21 +213,26 @@ class _CanteenViewProductState extends State<CanteenViewProduct> {
                       color: Theme.of(context).textTheme.titleLarge?.color,
                     ),
                   ),
-                  SizedBox(height: 8),
-                  Text(
-                    _formatPrice(
-                        productDetail['Price'] ?? widget.productData['Price']),
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: isDarkMode
-                          ? Colors.white
-                          : Theme.of(context).primaryColor,
+                  SizedBox(height: 16),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      bookDetail['Category']?['NAME'] ??
+                          widget.bookData['Category']?['NAME'] ??
+                          'Chưa phân loại',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   SizedBox(height: 16),
                   Text(
-                    'Mô tả sản phẩm',
+                    'Mô tả',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -245,8 +248,8 @@ class _CanteenViewProductState extends State<CanteenViewProduct> {
                           ),
                         )
                       : Text(
-                          productDetail['Description'] ??
-                              widget.productData['Description'] ??
+                          bookDetail['Description'] ??
+                              widget.bookData['Description'] ??
                               '',
                           style: TextStyle(
                             fontSize: 16,
@@ -274,25 +277,26 @@ class _CanteenViewProductState extends State<CanteenViewProduct> {
         ),
         child: ElevatedButton(
           onPressed: () {
-            context.read<CartProvider>().addItem(
-                productDetail.isNotEmpty ? productDetail : widget.productData);
+            context
+                .read<LibraryCartProvider>()
+                .addItem(bookDetail.isNotEmpty ? bookDetail : widget.bookData);
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Đã thêm vào giỏ hàng')),
+              SnackBar(content: Text('Đã thêm vào giỏ sách')),
             );
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: Theme.of(context).primaryColor,
-            foregroundColor: Colors.white,
             padding: EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
             ),
+            backgroundColor: Theme.of(context).primaryColor,
           ),
           child: Text(
-            'Thêm vào giỏ hàng',
+            'Thêm vào giỏ sách',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
           ),
         ),

@@ -1,129 +1,172 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:io';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
+import 'dart:io';
+import 'package:hpc_students/include/config.dart';
 
-Future<void> saveAvatarToFirebase(
-    String? avatarUrl, String dienThoai, String maSinhVien) async {
+Future<void> saveAvatarToAPI(String? avatarUrl, String maSinhVien) async {
   if (avatarUrl == null || avatarUrl.isEmpty) {
-    print("Avatar URL is null or empty, not updating Firestore.");
-    return; // Exit if the avatar URL is invalid
+    print("URL avatar là null hoặc trống, không cập nhật API.");
+    return;
   }
 
-  CollectionReference students =
-      FirebaseFirestore.instance.collection('Students_Profile');
+  final url = Uri.parse('${SpreadsheetAPI.profiles}');
+
+  final Map<String, String> body = {
+    'copecute': SpreadApiKey,
+    'action': 'updateProfile',
+    'mssv': maSinhVien,
+    'avatar': avatarUrl,
+    'avatartimestamp': DateTime.now().toIso8601String(),
+  };
 
   try {
-    DocumentSnapshot doc = await students.doc(maSinhVien).get();
-    bool needsUpdate = false;
+    var response = await http.post(
+      url,
+      body: body,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    );
 
-    if (doc.exists) {
-      Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    // Xử lý chuyển hướng thủ công
+    int maxRedirects = 5;
+    int redirectCount = 0;
 
-      if (data['avatar'] != avatarUrl) {
-        needsUpdate = true; // Avatar URL has changed
-      }
-
-      // Always update the timestamp
-      await students.doc(maSinhVien).update({
-        'timestamp':
-            FieldValue.serverTimestamp(), // Update timestamp to current time
-      });
-
-      if (needsUpdate) {
-        // Update avatar if it has changed
-        await students.doc(maSinhVien).update({
-          'avatar': avatarUrl,
-        });
-        print("Cập nhật avatar lên Firebase: $avatarUrl");
+    while ((response.statusCode == 301 || response.statusCode == 302) &&
+        redirectCount < maxRedirects) {
+      String? location = response.headers['location'];
+      if (location != null) {
+        print("40. Theo dõi chuyển hướng đến: $location");
+        response = await http.get(Uri.parse(location));
+        redirectCount++;
       } else {
-        print("Avatar đã đúng, không cần cập nhật.");
+        break;
+      }
+    }
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['success'] == true) {
+        print(
+            "Cập nhật thành công avatar và timestamp cho $maSinhVien: $avatarUrl");
+      } else {
+        print("Không thể cập nhật avatar: ${data['error']}");
       }
     } else {
-      // Create new data if it doesn't exist
-      await students.doc(maSinhVien).set({
-        'avatar': avatarUrl,
-        'dienThoai': dienThoai,
-        'timestamp': FieldValue.serverTimestamp(), // Save current timestamp
-      });
-      print("Tạo mới $maSinhVien và lưu avatar lên Firebase: $avatarUrl");
+      print("Không thể cập nhật avatar: ${response.statusCode}");
+      print("Nội dung phản hồi: ${response.body}");
     }
   } catch (e) {
-    print('Lỗi khi lưu avatar lên Firebase: $e');
+    print('Lỗi khi lưu avatar vào API: $e');
   }
+}
+
+Future<String?> getAvatarFromAPI(String maSinhVien) async {
+  final url = Uri.parse('${SpreadsheetAPI.profiles}');
+
+  final Map<String, String> body = {
+    'copecute': SpreadApiKey,
+    'action': 'getProfile',
+    'mssv': maSinhVien,
+    'fields': 'Avatar,AvatarTimestamp',
+  };
+
+  try {
+    var response = await http.post(
+      url,
+      body: body,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    );
+
+    // Xử lý chuyển hướng thủ công
+    int maxRedirects = 5;
+    int redirectCount = 0;
+
+    while ((response.statusCode == 301 || response.statusCode == 302) &&
+        redirectCount < maxRedirects) {
+      String? location = response.headers['location'];
+      if (location != null) {
+        print("92. Theo dõi chuyển hướng đến: $location");
+        response = await http.get(Uri.parse(location));
+        redirectCount++;
+      } else {
+        break;
+      }
+    }
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      String? avatarUrl = data['Avatar'];
+      String? timestampStr = data['AvatarTimestamp'];
+
+      if (avatarUrl != null && timestampStr != null) {
+        // Phân tích timestamp
+        DateTime timestamp = DateTime.parse(timestampStr);
+        DateTime now = DateTime.now();
+        Duration difference = now.difference(timestamp);
+
+        print("Timestamp avatar: $timestamp");
+        print("Thời gian hiện tại: $now");
+        print("Số giờ chênh lệch: ${difference.inHours}");
+
+        // Nếu avatar đã cũ hơn 10 giờ, hãy lấy một avatar mới
+        if (difference.inHours >= 10) {
+          print("Avatar đã cũ hơn 10 giờ, đang lấy một avatar mới...");
+          return null; // Điều này sẽ kích hoạt fetchAvatarFromZalo trong checkAvatarFromAPI
+        }
+        return avatarUrl;
+      }
+    } else {
+      print("Không thể lấy avatar: ${response.statusCode}");
+      print("Nội dung phản hồi: ${response.body}");
+    }
+  } catch (e) {
+    print('Lỗi khi lấy avatar từ API: $e');
+  }
+  return null;
 }
 
 Future<String?> fetchAvatarFromZalo(String dienThoai) async {
-  final url = 'https://zalo.me/$dienThoai'; // Use dienThoai for the URL
-  final HttpClient httpClient = HttpClient()
-    ..badCertificateCallback =
-        (X509Certificate cert, String host, int port) => true;
-
-  final ioClient = IOClient(httpClient);
-
+  final url = 'https://zalo.me/$dienThoai';
+  print(url);
   try {
-    final response = await ioClient.get(
-      Uri.parse(url),
-    );
+    var response = await http.get(Uri.parse(url));
 
-    if (response.statusCode == 200) {
-      print("$dienThoai đã get $url");
-      String responseBody = response.body;
+    // Xử lý chuyển hướng thủ công
+    int maxRedirects = 5;
+    int redirectCount = 0;
 
-      // Extract the avatar URL from the response body
-      RegExp regExp = RegExp(r'"avatar":"(.*?)"');
-      Match? match = regExp.firstMatch(responseBody);
-      return match != null
-          ? match.group(1)
-          : null; // Return the avatar URL or null
-    } else {
-      print("Failed to fetch avatar: ${response.statusCode}");
-      return null; // Return null if the request fails
-    }
-  } catch (e) {
-    print('Error fetching avatar: $e');
-    return null; // Return null in case of an error
-  } finally {
-    ioClient.close();
-  }
-}
-
-Future<String?> getAvatar(String maSinhVien, String dienThoai) async {
-  CollectionReference students =
-      FirebaseFirestore.instance.collection('Students_Profile');
-
-  try {
-    DocumentSnapshot doc = await students.doc(maSinhVien).get();
-
-    if (doc.exists) {
-      Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-      String? avatarUrl = data['avatar'];
-      Timestamp? timestamp = data['timestamp'];
-
-      // Check timestamp
-      if (timestamp != null) {
-        DateTime lastUpdated = timestamp.toDate();
-        if (DateTime.now().difference(lastUpdated).inHours >= 5) {
-          print("Timestamp is older than 2 hours, fetching new avatar.");
-          // If timestamp is older than 2 hours, fetch a new avatar
-          String? newAvatarUrl = await fetchAvatarFromZalo(dienThoai);
-          if (newAvatarUrl != null && newAvatarUrl.isNotEmpty) {
-            print("New avatar fetched: $newAvatarUrl");
-            // Update the new avatar in Firebase
-            await saveAvatarToFirebase(newAvatarUrl, dienThoai, maSinhVien);
-            return newAvatarUrl; // Return the new avatar
-          } else {
-            print("Fetched avatar is null or empty, not updating Firestore.");
-          }
-        } else {
-          print("Using existing avatar.");
-          // If not older than 2 hours, return the existing avatar
-          return avatarUrl;
-        }
+    while ((response.statusCode == 301 || response.statusCode == 302) &&
+        redirectCount < maxRedirects) {
+      String? location = response.headers['location'];
+      if (location != null) {
+        print("zl Theo dõi chuyển hướng đến: $location");
+        response = await http.get(Uri.parse(location));
+        redirectCount++;
+      } else {
+        break;
       }
     }
+
+    if (response.statusCode == 200) {
+      RegExp regExp = RegExp(r'"avatar":"(.*?)"');
+      Match? match = regExp.firstMatch(response.body);
+      return match?.group(1);
+    }
   } catch (e) {
-    print('Error fetching avatar: $e');
+    print('Lỗi khi lấy avatar từ Zalo: $e');
   }
-  print("No avatar found.");
-  return null; // Return null if no avatar is found
+  return null;
+}
+
+// Hàm trợ giúp để tạo IOClient với xử lý chứng chỉ SSL
+Future<IOClient> _getIOClient() async {
+  HttpClient httpClient = HttpClient()
+    ..badCertificateCallback =
+        ((X509Certificate cert, String host, int port) => true);
+
+  return IOClient(httpClient);
 }

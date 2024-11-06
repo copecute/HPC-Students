@@ -38,10 +38,9 @@ class _HomeImgurScreenState extends State<HomeImgurScreen> {
 
       print("Fetching images for page: $currentPage");
 
-      final url =
-          'https://script.google.com/macros/s/AKfycbyG9y5g_PXeKbIDm_y6t2MyVzH9KW6u2FKPOrwyX6DPcooay1T9Olm9EdXnS1d4jAhC/exec';
+      final url = SpreadsheetAPI.imgur;
       final body = {
-        'copecute': '$ggsapiKey',
+        'copecute': SpreadApiKey,
         'action': 'getPage',
         'page': currentPage.toString(),
       };
@@ -274,10 +273,9 @@ class _HomeImgurScreenState extends State<HomeImgurScreen> {
 
                                 print("Posting new image with URL: $imageUrl");
 
-                                final url =
-                                    'https://script.google.com/macros/s/AKfycbyG9y5g_PXeKbIDm_y6t2MyVzH9KW6u2FKPOrwyX6DPcooay1T9Olm9EdXnS1d4jAhC/exec';
+                                final url = SpreadsheetAPI.imgur;
                                 final body = {
-                                  'copecute': '$ggsapiKey',
+                                  'copecute': SpreadApiKey,
                                   'action': 'addImage',
                                   'username': username,
                                   'caption': _captionController.text,

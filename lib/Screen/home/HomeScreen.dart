@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:xml/xml.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
@@ -14,8 +13,8 @@ import 'package:hpc_students/Screen/loginScreen.dart';
 import 'package:hpc_students/Screen/home/category_grid.dart';
 import 'blog_service.dart'; // Import the new blog logic file
 import 'data_service.dart'; // Import the new data service
-import 'firebase_service.dart'; // Import the new Firebase service
 import 'schedule_card.dart'; // Import the new schedule card
+import 'weather_widget.dart'; // Import weather widget
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -40,13 +39,16 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _hasFetchedData = false; // Flag to check if data has been fetched
   late BlogService blogService; // Declare BlogService instance as late
   late DataService dataService; // Declare DataService instance
-  late FirebaseService firebaseService; // Declare FirebaseService instance
+  final GlobalKey<WeatherWidgetState> _weatherWidgetKey =
+      GlobalKey<WeatherWidgetState>();
+
+  // Thêm biến để lưu dữ liệu dự báo
+  Map<String, dynamic>? forecastData;
 
   @override
   void initState() {
     super.initState();
     dataService = DataService(); // Initialize DataService
-    firebaseService = FirebaseService(); // Initialize FirebaseService
     blogService = BlogService(blogID); // Initialize BlogService with blogID
     _loadCachedData(); // Load dữ liệu từ cache
     _loadCachedBlogPosts(); // Load cached blog posts
@@ -100,7 +102,16 @@ class _HomeScreenState extends State<HomeScreen> {
         _tbcTichLuy = data['tbcTichLuy']!;
         _xepLoaiHT = data['xepLoaiHT']!;
         _isLoading = false;
-        _saveOrUpdateToFirestore(); // Call the new method to save/update Firestore
+        if (data['maSinhVien'] != null &&
+            data['hoTen'] != null &&
+            data['trangThai'] != null &&
+            data['tbcTichLuy'] != null &&
+            data['tinChiTichLuy'] != null) {
+          _saveOrUpdateToSheet(data['maSinhVien']!, data['hoTen']!,
+              data['trangThai']!, data['tbcTichLuy']!, data['tinChiTichLuy']!);
+        } else {
+          print('Some data values are null, skipping sheet update');
+        }
         _cacheData();
       });
     }, (error) {
@@ -179,9 +190,12 @@ class _HomeScreenState extends State<HomeScreen> {
     await _fetchBlogPosts(); // Fetch blog posts again
   }
 
-  Future<void> _saveOrUpdateToFirestore() async {
-    await dataService.saveOrUpdateToFirestore(
-        _maSinhVien, _hoTen, _trangThai, _tbcTichLuy);
+  Future<void> _saveOrUpdateToSheet(String maSinhVien, String hoTen,
+      String trangThai, String tbcTichLuy, String tinChiTichLuy) async {
+    print(
+        "Saving or updating sheet with data: maSinhVien: $maSinhVien, hoTen: $hoTen, trangThai: $trangThai, tbcTichLuy: $tbcTichLuy, tinChiTichLuy: $tinChiTichLuy");
+    await dataService.saveOrUpdateToSheet(
+        maSinhVien, hoTen, trangThai, tbcTichLuy, tinChiTichLuy);
   }
 
   void _showSnackBar(String message) {
@@ -282,37 +296,99 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: _refreshData, // Thao tác kéo để làm mới
+        onRefresh: () async {
+          if (_weatherWidgetKey.currentState != null) {
+            await _weatherWidgetKey.currentState!.refresh();
+          }
+          await _refreshData();
+        },
         child: SingleChildScrollView(
           child: Column(
             children: [
-              SizedBox(height: 10),
               Container(
-                width: double.infinity, // Đảm bảo Card chiếm toàn bộ chiều rộng
+                width: double.infinity,
                 child: Card(
-                  margin: EdgeInsets.all(0),
+                  margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  elevation: 4,
+                  elevation: 3,
                   child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.max,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 15, vertical: 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        SizedBox(height: 5),
-                        Text(
-                          'TBC tích lũy $_tbcTichLuy, Xếp loại $_xepLoaiHT',
-                          style: TextStyle(
-                            fontSize: 16,
-                          ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.school,
+                                    size: 16, color: Colors.blue[700]),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Tín chỉ tích lũy:',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  '$_tinChiTichLuy',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue[700],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(Icons.grade,
+                                    size: 16, color: Colors.green[700]),
+                                SizedBox(width: 6),
+                                Text(
+                                  'TBC:',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  '$_tbcTichLuy',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green[700],
+                                  ),
+                                ),
+                                Text(
+                                  ' ($_xepLoaiHT)',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                        SizedBox(height: 5),
-                        Text(
-                          'Tín chỉ tích lũy $_tinChiTichLuy',
-                          style: TextStyle(
-                            fontSize: 16,
+                        Container(
+                          padding: EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[50],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.info_outline,
+                            color: Colors.blue[700],
+                            size: 20,
                           ),
                         ),
                       ],
@@ -322,6 +398,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
 
               SizedBox(height: 20),
+              WeatherWidget(key: _weatherWidgetKey),
+              SizedBox(height: 10),
+
               // Lịch học section
               ScheduleCard(), // Display the schedule card
 
@@ -367,7 +446,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _blogPosts.isEmpty && !_isLoading
                   ? Center(child: CircularProgressIndicator())
                   : Container(
-                      height: 150, // Chiều cao cố định cho phần tin tức
+                      height: 150, // Chiều cao cố định cho phn tin tức
                       child: _isLoading
                           ? Center(
                               child:
@@ -476,73 +555,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               },
                             ),
                     ),
-              Center(
-                child: Container(
-                  margin: EdgeInsets.all(8),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Nhà xuất bản: HPC Students',
-                          style: TextStyle(
-                            fontSize: 14,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Chịu trách nhiệm nội dung: copecute',
-                          style: TextStyle(
-                            fontSize: 14,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        SizedBox(height: 12),
-                        Container(
-                          width: MediaQuery.of(context).size.width * 0.8,
-                          child: ElevatedButton(
-                            onPressed: () async {
-                              final Uri url = Uri.parse(
-                                  'https://hpc-students.blogspot.com/p/contact-us.html');
-                              try {
-                                if (!await launchUrl(url,
-                                    mode: LaunchMode.externalApplication)) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                        content: Text('Không thể mở liên kết')),
-                                  );
-                                }
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                      content: Text(
-                                          'Có lỗi xảy ra khi mở liên kết')),
-                                );
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFF2d59a4),
-                              foregroundColor: Colors.white,
-                              padding: EdgeInsets.symmetric(vertical: 15),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(25),
-                              ),
-                              textStyle: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            child: Text('Liên hệ với chúng tôi'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
               SizedBox(height: 20),
             ],
           ),

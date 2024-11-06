@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hpc_students/include/config.dart';
 
-class OrderScreen extends StatefulWidget {
+class LibraryOrderScreen extends StatefulWidget {
   @override
-  _OrderScreenState createState() => _OrderScreenState();
+  _LibraryOrderScreenState createState() => _LibraryOrderScreenState();
 }
 
-class _OrderScreenState extends State<OrderScreen>
+class _LibraryOrderScreenState extends State<LibraryOrderScreen>
     with SingleTickerProviderStateMixin {
   List<dynamic> orders = [];
   bool isLoading = true;
@@ -18,21 +17,20 @@ class _OrderScreenState extends State<OrderScreen>
   int currentPage = 1;
   int totalPages = 1;
   late TabController _tabController;
-  String? _currentStatus = 'pending';
+  String? _currentStatus;
 
-  // Số lượng đơn hàng theo trạng thái
+  // Số lượng đơn theo trạng thái
   int totalPending = 0;
-  int totalProcessing = 0;
-  int totalCompleted = 0;
-  int totalCancelled = 0;
+  int totalBorrowing = 0;
+  int totalReturned = 0;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 5,
+      length: 4,
       vsync: this,
-      initialIndex: 1,
+      initialIndex: 0,
     );
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
@@ -42,16 +40,13 @@ class _OrderScreenState extends State<OrderScreen>
               _currentStatus = null;
               break;
             case 1:
-              _currentStatus = 'pending';
+              _currentStatus = 'Pending';
               break;
             case 2:
-              _currentStatus = 'processing';
+              _currentStatus = 'Borrowing';
               break;
             case 3:
-              _currentStatus = 'completed';
-              break;
-            case 4:
-              _currentStatus = 'cancelled';
+              _currentStatus = 'Returned';
               break;
           }
           currentPage = 1;
@@ -80,17 +75,17 @@ class _OrderScreenState extends State<OrderScreen>
 
       if (mssv == null) {
         setState(() {
-          errorMessage = 'Vui lòng đăng nhập để xem đơn hàng';
+          errorMessage = 'Vui lòng đăng nhập để xem sách đã mượn';
           isLoading = false;
         });
         return;
       }
 
-      final url = SpreadsheetAPI.canteen;
+      final url = SpreadsheetAPI.libraryBooks;
 
       final Map<String, String> requestBody = {
         'copecute': SpreadApiKey,
-        'action': 'getOrders',
+        'action': 'getBorrowing',
         'mssv': mssv,
         'page': currentPage.toString(),
       };
@@ -114,17 +109,14 @@ class _OrderScreenState extends State<OrderScreen>
           totalPages = data['totalPages'] ?? 1;
           currentPage = data['currentPage'] ?? 1;
 
-          // Cập nhật số lượng đơn hàng từ statusSummary
           final statusSummary = data['statusSummary'] as Map<String, dynamic>;
           totalPending = statusSummary['pending'] ?? 0;
-          totalProcessing = statusSummary['processing'] ?? 0;
-          totalCompleted = statusSummary['completed'] ?? 0;
-          totalCancelled = statusSummary['cancelled'] ?? 0;
+          totalBorrowing = statusSummary['borrowing'] ?? 0;
+          totalReturned = statusSummary['returned'] ?? 0;
 
           isLoading = false;
         });
       } else if (response.statusCode == 302) {
-        print("Redirected to: ${response.headers['location']}");
         final redirectUrl = response.headers['location'];
         if (redirectUrl != null) {
           final redirectResponse = await http.get(Uri.parse(redirectUrl));
@@ -135,13 +127,11 @@ class _OrderScreenState extends State<OrderScreen>
               totalPages = data['totalPages'] ?? 1;
               currentPage = data['currentPage'] ?? 1;
 
-              // Cập nhật số lượng đơn hàng từ statusSummary
               final statusSummary =
                   data['statusSummary'] as Map<String, dynamic>;
               totalPending = statusSummary['pending'] ?? 0;
-              totalProcessing = statusSummary['processing'] ?? 0;
-              totalCompleted = statusSummary['completed'] ?? 0;
-              totalCancelled = statusSummary['cancelled'] ?? 0;
+              totalBorrowing = statusSummary['borrowing'] ?? 0;
+              totalReturned = statusSummary['returned'] ?? 0;
 
               isLoading = false;
             });
@@ -156,7 +146,7 @@ class _OrderScreenState extends State<OrderScreen>
     } catch (e) {
       print('Error fetching orders: $e');
       setState(() {
-        errorMessage = 'Có lỗi xảy ra khi tải đơn hàng';
+        errorMessage = 'Có lỗi xảy ra khi tải danh sách sách đã mượn';
         isLoading = false;
       });
     }
@@ -198,38 +188,27 @@ class _OrderScreenState extends State<OrderScreen>
     }
   }
 
-  String _formatPrice(dynamic price) {
-    if (price == null) return '0 đ';
-    return '${price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')} đ';
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return Colors.orange;
-      case 'processing':
-        return Colors.blue;
-      case 'completed':
-        return Colors.green;
-      case 'cancelled':
-        return Colors.red;
+  String _getStatusText(dynamic status) {
+    if (status == null || status.toString() == 'pending') return 'Chờ xử lý';
+    switch (status.toString()) {
+      case 'Borrowing':
+        return 'Đang mượn';
+      case 'Returned':
+        return 'Đã trả';
       default:
-        return Colors.grey;
+        return 'Chờ xử lý';
     }
   }
 
-  String _getStatusText(String status) {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return 'Chờ xử lý';
-      case 'processing':
-        return 'Đang xử lý';
-      case 'completed':
-        return 'Hoàn thành';
-      case 'cancelled':
-        return 'Đã hủy';
+  Color _getStatusColor(dynamic status) {
+    if (status == null || status.toString() == 'pending') return Colors.orange;
+    switch (status.toString()) {
+      case 'Borrowing':
+        return Colors.blue;
+      case 'Returned':
+        return Colors.green;
       default:
-        return 'Không xác định';
+        return Colors.orange;
     }
   }
 
@@ -242,9 +221,8 @@ class _OrderScreenState extends State<OrderScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Thông tin người đặt
         Text(
-          'Thông tin người đặt:',
+          'Thông tin người mượn:',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: isDarkMode ? Colors.white : Colors.black,
@@ -285,9 +263,8 @@ class _OrderScreenState extends State<OrderScreen>
         ),
         SizedBox(height: 16),
 
-        // Chi tiết đơn hàng
         Text(
-          'Chi tiết đơn hàng:',
+          'Sách đã mượn:',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: isDarkMode ? Colors.white : Colors.black,
@@ -295,7 +272,7 @@ class _OrderScreenState extends State<OrderScreen>
         ),
         SizedBox(height: 8),
         ...orderItems.values.map((item) {
-          final Map<String, dynamic> product = item as Map<String, dynamic>;
+          final Map<String, dynamic> book = item as Map<String, dynamic>;
           return Padding(
             padding: EdgeInsets.symmetric(vertical: 4),
             child: Row(
@@ -303,7 +280,7 @@ class _OrderScreenState extends State<OrderScreen>
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.network(
-                    product['IMG'],
+                    book['IMG'],
                     width: 40,
                     height: 40,
                     fit: BoxFit.cover,
@@ -315,14 +292,14 @@ class _OrderScreenState extends State<OrderScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        product['NAME'],
+                        book['NAME'],
                         style: TextStyle(
                           fontWeight: FontWeight.w500,
                           color: isDarkMode ? Colors.white : Colors.black,
                         ),
                       ),
                       Text(
-                        '${_formatPrice(product['Price'])} x ${product['Quantity']}',
+                        'Số lượng: ${book['Quantity']}',
                         style: TextStyle(
                           color: isDarkMode
                               ? Colors.white70
@@ -331,13 +308,6 @@ class _OrderScreenState extends State<OrderScreen>
                         ),
                       ),
                     ],
-                  ),
-                ),
-                Text(
-                  _formatPrice(product['Price'] * product['Quantity']),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    color: isDarkMode ? Colors.white : Colors.black,
                   ),
                 ),
               ],
@@ -381,61 +351,38 @@ class _OrderScreenState extends State<OrderScreen>
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    SystemChrome.setSystemUIOverlayStyle(
-      isDarkMode
-          ? SystemUiOverlayStyle.light.copyWith(
-              statusBarColor: Colors.transparent,
-              statusBarIconBrightness: Brightness.light,
-            )
-          : SystemUiOverlayStyle.dark.copyWith(
-              statusBarColor: Colors.transparent,
-              statusBarIconBrightness: Brightness.dark,
-            ),
-    );
-
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Đơn hàng của tôi',
+          'Sách đã mượn',
           style: TextStyle(
             color: Theme.of(context).textTheme.titleLarge?.color,
           ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        systemOverlayStyle:
-            isDarkMode ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
           tabs: [
             Tab(
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text('Tất cả'),
-                  if ((totalPending +
-                          totalProcessing +
-                          totalCompleted +
-                          totalCancelled) >
-                      0) ...[
+                  if ((totalPending + totalBorrowing + totalReturned) > 0) ...[
                     SizedBox(width: 4),
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      constraints: BoxConstraints(
-                        minWidth: 20,
-                        minHeight: 20,
-                      ),
                       decoration: BoxDecoration(
                         color: Theme.of(context).primaryColor,
-                        shape: BoxShape.circle,
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Center(
-                        child: Text(
-                          '${totalPending + totalProcessing + totalCompleted + totalCancelled}',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                          ),
+                      child: Text(
+                        '${totalPending + totalBorrowing + totalReturned}',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
                         ),
                       ),
                     ),
@@ -445,27 +392,22 @@ class _OrderScreenState extends State<OrderScreen>
             ),
             Tab(
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text('Chờ xử lý'),
                   if (totalPending > 0) ...[
                     SizedBox(width: 4),
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      constraints: BoxConstraints(
-                        minWidth: 20,
-                        minHeight: 20,
-                      ),
                       decoration: BoxDecoration(
                         color: Colors.orange,
-                        shape: BoxShape.circle,
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Center(
-                        child: Text(
-                          '$totalPending',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                          ),
+                      child: Text(
+                        '$totalPending',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
                         ),
                       ),
                     ),
@@ -475,27 +417,22 @@ class _OrderScreenState extends State<OrderScreen>
             ),
             Tab(
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Đang xử lý'),
-                  if (totalProcessing > 0) ...[
+                  Text('Đang mượn'),
+                  if (totalBorrowing > 0) ...[
                     SizedBox(width: 4),
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      constraints: BoxConstraints(
-                        minWidth: 20,
-                        minHeight: 20,
-                      ),
                       decoration: BoxDecoration(
                         color: Colors.blue,
-                        shape: BoxShape.circle,
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Center(
-                        child: Text(
-                          '$totalProcessing',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                          ),
+                      child: Text(
+                        '$totalBorrowing',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
                         ),
                       ),
                     ),
@@ -505,57 +442,22 @@ class _OrderScreenState extends State<OrderScreen>
             ),
             Tab(
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Hoàn thành'),
-                  if (totalCompleted > 0) ...[
+                  Text('Đã trả'),
+                  if (totalReturned > 0) ...[
                     SizedBox(width: 4),
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      constraints: BoxConstraints(
-                        minWidth: 20,
-                        minHeight: 20,
-                      ),
                       decoration: BoxDecoration(
                         color: Colors.green,
-                        shape: BoxShape.circle,
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Center(
-                        child: Text(
-                          '$totalCompleted',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            Tab(
-              child: Row(
-                children: [
-                  Text('Đã hủy'),
-                  if (totalCancelled > 0) ...[
-                    SizedBox(width: 4),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      constraints: BoxConstraints(
-                        minWidth: 20,
-                        minHeight: 20,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '$totalCancelled',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                          ),
+                      child: Text(
+                        '$totalReturned',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
                         ),
                       ),
                     ),
@@ -589,9 +491,6 @@ class _OrderScreenState extends State<OrderScreen>
                             ElevatedButton(
                               onPressed: _fetchOrders,
                               child: Text('Thử lại'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Theme.of(context).primaryColor,
-                              ),
                             ),
                           ],
                         ),
@@ -601,11 +500,11 @@ class _OrderScreenState extends State<OrderScreen>
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.receipt_long_outlined,
+                                Icon(Icons.library_books_outlined,
                                     size: 64, color: Colors.grey),
                                 SizedBox(height: 16),
                                 Text(
-                                  'Chưa có đơn hàng nào',
+                                  'Chưa có sách nào được mượn',
                                   style: TextStyle(
                                       fontSize: 18, color: Colors.grey),
                                 ),
@@ -615,24 +514,15 @@ class _OrderScreenState extends State<OrderScreen>
                         : CustomScrollView(
                             slivers: [
                               SliverPadding(
-                                padding: EdgeInsets.all(
-                                    MediaQuery.of(context).size.width * 0.04),
+                                padding: EdgeInsets.all(16),
                                 sliver: SliverList(
                                   delegate: SliverChildBuilderDelegate(
                                     (context, index) {
                                       final order = orders[index];
                                       return Card(
-                                        margin: EdgeInsets.only(
-                                            bottom: MediaQuery.of(context)
-                                                    .size
-                                                    .height *
-                                                0.02),
+                                        margin: EdgeInsets.only(bottom: 16),
                                         child: Padding(
-                                          padding: EdgeInsets.all(
-                                              MediaQuery.of(context)
-                                                      .size
-                                                      .width *
-                                                  0.04),
+                                          padding: EdgeInsets.all(16),
                                           child: Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
@@ -643,7 +533,7 @@ class _OrderScreenState extends State<OrderScreen>
                                                         .spaceBetween,
                                                 children: [
                                                   Text(
-                                                    'Đơn hàng #${order['STT']}',
+                                                    'Mã phiếu mượn #${order['STT']}',
                                                     style: TextStyle(
                                                       fontSize: 18,
                                                       fontWeight:
@@ -657,8 +547,7 @@ class _OrderScreenState extends State<OrderScreen>
                                                             vertical: 4),
                                                     decoration: BoxDecoration(
                                                       color: _getStatusColor(
-                                                              order['Status'] ??
-                                                                  '')
+                                                              order['Status'])
                                                           .withOpacity(0.2),
                                                       borderRadius:
                                                           BorderRadius.circular(
@@ -666,12 +555,10 @@ class _OrderScreenState extends State<OrderScreen>
                                                     ),
                                                     child: Text(
                                                       _getStatusText(
-                                                          order['Status'] ??
-                                                              ''),
+                                                          order['Status']),
                                                       style: TextStyle(
                                                         color: _getStatusColor(
-                                                            order['Status'] ??
-                                                                ''),
+                                                            order['Status']),
                                                         fontWeight:
                                                             FontWeight.bold,
                                                       ),
@@ -682,32 +569,12 @@ class _OrderScreenState extends State<OrderScreen>
                                               SizedBox(height: 16),
                                               _buildOrderDetails(order),
                                               Divider(height: 24),
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
-                                                children: [
-                                                  Text(
-                                                    'Tổng tiền:',
-                                                    style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                  Text(
-                                                    _formatPrice(
-                                                        order['UnitPrice']),
-                                                    style: TextStyle(
-                                                      color: isDarkMode
-                                                          ? Colors.white
-                                                          : Theme.of(context)
-                                                              .primaryColor,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 16,
-                                                    ),
-                                                  ),
-                                                ],
+                                              Text(
+                                                'Thời gian: ${DateTime.parse(order['Timestamp']).toLocal().toString().substring(0, 16)}',
+                                                style: TextStyle(
+                                                  color: Colors.grey,
+                                                  fontSize: 14,
+                                                ),
                                               ),
                                             ],
                                           ),
@@ -718,78 +585,81 @@ class _OrderScreenState extends State<OrderScreen>
                                   ),
                                 ),
                               ),
-                              SliverToBoxAdapter(
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 16),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      IconButton(
-                                        icon: Icon(Icons.first_page),
-                                        onPressed: currentPage > 1
-                                            ? _goToFirstPage
-                                            : null,
-                                        color: currentPage > 1
-                                            ? Theme.of(context).brightness ==
-                                                    Brightness.dark
-                                                ? Colors.white
-                                                : Theme.of(context).primaryColor
-                                            : Colors.grey,
-                                      ),
-                                      IconButton(
-                                        icon: Icon(Icons.chevron_left),
-                                        onPressed:
-                                            currentPage > 1 ? _prevPage : null,
-                                        color: currentPage > 1
-                                            ? Theme.of(context).brightness ==
-                                                    Brightness.dark
-                                                ? Colors.white
-                                                : Theme.of(context).primaryColor
-                                            : Colors.grey,
-                                      ),
-                                      Container(
-                                        padding: EdgeInsets.symmetric(
-                                            horizontal: 16),
-                                        child: Text(
-                                          'Trang $currentPage/$totalPages',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Theme.of(context)
-                                                .textTheme
-                                                .bodyLarge
-                                                ?.color,
+                              if (totalPages > 1)
+                                SliverToBoxAdapter(
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 16),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        IconButton(
+                                          icon: Icon(Icons.first_page),
+                                          onPressed: currentPage > 1
+                                              ? _goToFirstPage
+                                              : null,
+                                          color: currentPage > 1
+                                              ? isDarkMode
+                                                  ? Colors.white
+                                                  : Theme.of(context)
+                                                      .primaryColor
+                                              : Colors.grey,
+                                        ),
+                                        IconButton(
+                                          icon: Icon(Icons.chevron_left),
+                                          onPressed: currentPage > 1
+                                              ? _prevPage
+                                              : null,
+                                          color: currentPage > 1
+                                              ? isDarkMode
+                                                  ? Colors.white
+                                                  : Theme.of(context)
+                                                      .primaryColor
+                                              : Colors.grey,
+                                        ),
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                              horizontal: 16),
+                                          child: Text(
+                                            'Trang $currentPage/$totalPages',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyLarge
+                                                  ?.color,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                      IconButton(
-                                        icon: Icon(Icons.chevron_right),
-                                        onPressed: currentPage < totalPages
-                                            ? _nextPage
-                                            : null,
-                                        color: currentPage < totalPages
-                                            ? Theme.of(context).brightness ==
-                                                    Brightness.dark
-                                                ? Colors.white
-                                                : Theme.of(context).primaryColor
-                                            : Colors.grey,
-                                      ),
-                                      IconButton(
-                                        icon: Icon(Icons.last_page),
-                                        onPressed: currentPage < totalPages
-                                            ? _goToLastPage
-                                            : null,
-                                        color: currentPage < totalPages
-                                            ? Theme.of(context).brightness ==
-                                                    Brightness.dark
-                                                ? Colors.white
-                                                : Theme.of(context).primaryColor
-                                            : Colors.grey,
-                                      ),
-                                    ],
+                                        IconButton(
+                                          icon: Icon(Icons.chevron_right),
+                                          onPressed: currentPage < totalPages
+                                              ? _nextPage
+                                              : null,
+                                          color: currentPage < totalPages
+                                              ? isDarkMode
+                                                  ? Colors.white
+                                                  : Theme.of(context)
+                                                      .primaryColor
+                                              : Colors.grey,
+                                        ),
+                                        IconButton(
+                                          icon: Icon(Icons.last_page),
+                                          onPressed: currentPage < totalPages
+                                              ? _goToLastPage
+                                              : null,
+                                          color: currentPage < totalPages
+                                              ? isDarkMode
+                                                  ? Colors.white
+                                                  : Theme.of(context)
+                                                      .primaryColor
+                                              : Colors.grey,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
                             ],
                           ),
             if (isLoading && orders.isNotEmpty)
