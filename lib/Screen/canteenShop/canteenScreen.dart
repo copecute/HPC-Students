@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:hpc_students/include/config.dart';
 import 'package:provider/provider.dart';
-import 'package:hpc_students/include/theme_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hpc_students/Screen/canteenShop/canteenViewProduct.dart';
 import 'package:hpc_students/Screen/canteenShop/cart_provider.dart';
 import 'package:hpc_students/Screen/canteenShop/cartScreen.dart';
 import 'package:hpc_students/Screen/canteenShop/orderScreen.dart';
+import 'package:hpc_students/include/config.dart';
+import 'dart:async';
 
 class CanteenScreen extends StatefulWidget {
   @override
@@ -24,6 +24,8 @@ class _CanteenScreenState extends State<CanteenScreen> {
   int totalPages = 1;
   final ScrollController _scrollController = ScrollController();
   String _hoTen = '';
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _debounce;
 
   @override
   void initState() {
@@ -48,22 +50,23 @@ class _CanteenScreenState extends State<CanteenScreen> {
 
       print("Fetching products for page: $currentPage");
 
-      final url =
-          'https://script.google.com/macros/s/AKfycbwLIYesYJgBbpOFWhCPxfpMSxnFrZZSbv9iMorkPyG0b8HkRKv6RLpqlsVrkEk5vGoh/exec';
+      final url = SpreadsheetAPI.canteen;
 
       print('Fetching products from URL: $url');
       print('Request body: ${{
-        'copecute': 'MIiwxJTx8h3a3HLYvpYpWXsywFH71f5jYP1IQo8AMUwmZr9H7y',
+        'copecute': SpreadApiKey,
         'action': 'getProducts',
-        'page': currentPage.toString()
+        'page': currentPage.toString(),
+        'search': _searchController.text.trim(),
       }}');
 
       final response = await http.post(
         Uri.parse(url),
         body: {
-          'copecute': 'MIiwxJTx8h3a3HLYvpYpWXsywFH71f5jYP1IQo8AMUwmZr9H7y',
+          'copecute': SpreadApiKey,
           'action': 'getProducts',
           'page': currentPage.toString(),
+          'search': _searchController.text.trim(),
         },
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -157,6 +160,16 @@ class _CanteenScreenState extends State<CanteenScreen> {
     return '${price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')} đ';
   }
 
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 1000), () {
+      setState(() {
+        currentPage = 1;
+      });
+      _fetchProducts();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -243,435 +256,444 @@ class _CanteenScreenState extends State<CanteenScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: _fetchProducts,
-        child: _buildBody(),
-      ),
-    );
-  }
-
-  Widget _buildBody() {
-    if (isLoading && productList.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Stack(
           children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Đang tải danh sách sản phẩm...'),
-          ],
-        ),
-      );
-    }
-
-    if (errorMessage.isNotEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 60, color: Colors.red),
-            SizedBox(height: 16),
-            Text(
-              errorMessage,
-              style: TextStyle(fontSize: 16),
-              textAlign: TextAlign.center,
-            ),
-            ElevatedButton(
-              onPressed: _fetchProducts,
-              child: Text('Thử lại'),
-              style: ElevatedButton.styleFrom(
-                foregroundColor: Colors.white,
-                backgroundColor: Color(0xFF2d59a4),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Stack(
-      children: [
-        CustomScrollView(
-          controller: _scrollController,
-          slivers: [
-            SliverToBoxAdapter(
-              child: Container(
-                padding: EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Chào mừng $_hoTen đến với Căng tin HPC! 👋',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white
-                            : Theme.of(context).primaryColor,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Khám phá các món ăn và đồ uống tuyệt vời của chúng tôi',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).textTheme.bodyMedium?.color,
-                      ),
-                    ),
-                    SizedBox(height: 16),
-                    Container(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.orange.withOpacity(0.2)
-                            : Colors.orange[100],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.local_shipping_outlined,
+            CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Container(
+                    padding: EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Chào mừng $_hoTen đến với Căng tin HPC! 👋',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
                             color:
                                 Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.white
+                                    : Theme.of(context).primaryColor,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Khám phá các món ăn và đồ uống tuyệt vời của chúng tôi',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color:
+                                Theme.of(context).textTheme.bodyMedium?.color,
+                          ),
+                        ),
+                        SizedBox(height: 16),
+                        TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: 'Tìm kiếm...',
+                            prefixIcon: Icon(Icons.search),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(5),
+                              borderSide: BorderSide(
+                                color: Colors.grey,
+                                width: 1,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(5),
+                              borderSide: BorderSide(
+                                color: Colors.grey,
+                                width: 1,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(5),
+                              borderSide: BorderSide(
+                                color: Theme.of(context).primaryColor,
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                          onChanged: _onSearchChanged,
+                          textInputAction: TextInputAction.search,
+                          onSubmitted: (value) {
+                            if (_debounce?.isActive ?? false)
+                              _debounce?.cancel();
+                            setState(() {
+                              currentPage = 1;
+                            });
+                            _fetchProducts();
+                          },
+                        ),
+                        SizedBox(height: 16),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.orange.withOpacity(0.2)
+                                    : Colors.orange[100],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.local_shipping_outlined,
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
                                     ? Colors.orange[300]
                                     : Colors.orange[800],
-                          ),
-                          SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Giao hàng nhanh chóng',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.orange[300]
-                                        : Colors.orange[800],
-                                  ),
-                                ),
-                                Text(
-                                  'Đặt món và nhận trong vài phút',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.orange[300]
-                                        : Colors.orange[800],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SliverPadding(
-              padding: EdgeInsets.all(16),
-              sliver: SliverGrid(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount:
-                      MediaQuery.of(context).size.width > 600 ? 3 : 2,
-                  childAspectRatio:
-                      MediaQuery.of(context).size.width > 600 ? 0.8 : 0.75,
-                  crossAxisSpacing: MediaQuery.of(context).size.width * 0.04,
-                  mainAxisSpacing: MediaQuery.of(context).size.width * 0.04,
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final product = productList[index];
-                    return GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => CanteenViewProduct(
-                              productData: product,
-                            ),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? Colors.black.withOpacity(0.3)
-                                  : Colors.black.withOpacity(0.1),
-                              blurRadius: 8,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              flex: 5,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.vertical(
-                                    top: Radius.circular(16),
-                                  ),
-                                ),
-                                child: Stack(
-                                  fit: StackFit.expand,
+                              ),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Image.network(
-                                      product['IMG'] ?? '',
-                                      fit: BoxFit.cover,
-                                      loadingBuilder:
-                                          (context, child, loadingProgress) {
-                                        if (loadingProgress == null)
-                                          return child;
-                                        return Container(
-                                          color: Colors.grey[200],
-                                          child: Center(
-                                            child: CircularProgressIndicator(
-                                              value: loadingProgress
-                                                          .expectedTotalBytes !=
-                                                      null
-                                                  ? loadingProgress
-                                                          .cumulativeBytesLoaded /
-                                                      loadingProgress
-                                                          .expectedTotalBytes!
-                                                  : null,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      errorBuilder:
-                                          (context, error, stackTrace) {
-                                        return Container(
-                                          color: Colors.grey[200],
-                                          child: Center(
-                                            child: Icon(Icons.broken_image,
-                                                size: 40),
-                                          ),
-                                        );
-                                      },
+                                    Text(
+                                      'Giao hàng nhanh chóng',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? Colors.orange[300]
+                                            : Colors.orange[800],
+                                      ),
                                     ),
-                                    Positioned(
-                                      top: 8,
-                                      right: 8,
-                                      child: Container(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context).brightness ==
-                                                  Brightness.dark
-                                              ? Colors.black.withOpacity(0.7)
-                                              : Colors.black.withOpacity(0.6),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              Icons.star,
-                                              size: 16,
-                                              color: Colors.amber,
-                                            ),
-                                            SizedBox(width: 4),
-                                            Text(
-                                              '4.5',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                                    Text(
+                                      'Đặt món và nhận trong vài phút',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? Colors.orange[300]
+                                            : Colors.orange[800],
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: EdgeInsets.all(16),
+                  sliver: SliverGrid(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount:
+                          MediaQuery.of(context).size.width > 600 ? 3 : 2,
+                      childAspectRatio:
+                          MediaQuery.of(context).size.width > 600 ? 0.8 : 0.75,
+                      crossAxisSpacing:
+                          MediaQuery.of(context).size.width * 0.04,
+                      mainAxisSpacing: MediaQuery.of(context).size.width * 0.04,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final product = productList[index];
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CanteenViewProduct(
+                                  productData: product,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).cardColor,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Colors.black.withOpacity(0.3)
+                                      : Colors.black.withOpacity(0.1),
+                                  blurRadius: 8,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
                             ),
-                            Expanded(
-                              flex: 3,
-                              child: Padding(
-                                padding: EdgeInsets.all(12),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      product['NAME']?.toString() ??
-                                          'Chưa có tên',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Theme.of(context)
-                                            .textTheme
-                                            .bodyLarge
-                                            ?.color,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    SizedBox(height: 4),
-                                    Expanded(
-                                      child: Text(
-                                        product['Description']?.toString() ??
-                                            '',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium
-                                              ?.color,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  flex: 5,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.vertical(
+                                        top: Radius.circular(16),
                                       ),
                                     ),
-                                    SizedBox(height: 4),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
+                                    child: Stack(
+                                      fit: StackFit.expand,
                                       children: [
-                                        Text(
-                                          _formatPrice(product['Price']),
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color:
-                                                Theme.of(context).brightness ==
-                                                        Brightness.dark
-                                                    ? Colors.white
-                                                    : Theme.of(context)
-                                                        .primaryColor,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                        Image.network(
+                                          product['IMG'] ?? '',
+                                          fit: BoxFit.cover,
+                                          loadingBuilder: (context, child,
+                                              loadingProgress) {
+                                            if (loadingProgress == null)
+                                              return child;
+                                            return Container(
+                                              color: Colors.grey[200],
+                                              child: Center(
+                                                child:
+                                                    CircularProgressIndicator(
+                                                  value: loadingProgress
+                                                              .expectedTotalBytes !=
+                                                          null
+                                                      ? loadingProgress
+                                                              .cumulativeBytesLoaded /
+                                                          loadingProgress
+                                                              .expectedTotalBytes!
+                                                      : null,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                            return Container(
+                                              color: Colors.grey[200],
+                                              child: Center(
+                                                child: Icon(Icons.broken_image,
+                                                    size: 40),
+                                              ),
+                                            );
+                                          },
                                         ),
-                                        Container(
-                                          padding: EdgeInsets.all(4),
-                                          decoration: BoxDecoration(
-                                            color:
-                                                Theme.of(context).brightness ==
-                                                        Brightness.dark
-                                                    ? Colors.white
-                                                    : Theme.of(context)
-                                                        .primaryColor,
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                          child: InkWell(
-                                            onTap: () {
-                                              context
-                                                  .read<CartProvider>()
-                                                  .addItem(product);
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                SnackBar(
-                                                    content: Text(
-                                                        'Đã thêm vào giỏ hàng')),
-                                              );
-                                            },
-                                            child: Icon(
-                                              Icons.add_shopping_cart,
+                                        Positioned(
+                                          top: 8,
+                                          right: 8,
+                                          child: Container(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
                                               color: Theme.of(context)
                                                           .brightness ==
                                                       Brightness.dark
-                                                  ? Theme.of(context)
-                                                      .primaryColor
-                                                  : Colors.white,
-                                              size: 20,
+                                                  ? Colors.black
+                                                      .withOpacity(0.7)
+                                                  : Colors.black
+                                                      .withOpacity(0.6),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  Icons.star,
+                                                  size: 16,
+                                                  color: Colors.amber,
+                                                ),
+                                                SizedBox(width: 4),
+                                                Text(
+                                                  '4.5',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         ),
                                       ],
                                     ),
-                                  ],
+                                  ),
                                 ),
-                              ),
+                                Expanded(
+                                  flex: 3,
+                                  child: Padding(
+                                    padding: EdgeInsets.all(12),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          product['NAME']?.toString() ??
+                                              'Chưa có tên',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Theme.of(context)
+                                                .textTheme
+                                                .bodyLarge
+                                                ?.color,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        SizedBox(height: 4),
+                                        Expanded(
+                                          child: Text(
+                                            product['Description']
+                                                    ?.toString() ??
+                                                '',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium
+                                                  ?.color,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        SizedBox(height: 4),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              _formatPrice(product['Price']),
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                color: Theme.of(context)
+                                                            .brightness ==
+                                                        Brightness.dark
+                                                    ? Colors.white
+                                                    : Theme.of(context)
+                                                        .primaryColor,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            Container(
+                                              padding: EdgeInsets.all(4),
+                                              decoration: BoxDecoration(
+                                                color: Theme.of(context)
+                                                            .brightness ==
+                                                        Brightness.dark
+                                                    ? Colors.white
+                                                    : Theme.of(context)
+                                                        .primaryColor,
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              child: InkWell(
+                                                onTap: () {
+                                                  context
+                                                      .read<CartProvider>()
+                                                      .addItem(product);
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(
+                                                    SnackBar(
+                                                        content: Text(
+                                                            'Đã thêm vào giỏ hàng')),
+                                                  );
+                                                },
+                                                child: Icon(
+                                                  Icons.add_shopping_cart,
+                                                  color: Theme.of(context)
+                                                              .brightness ==
+                                                          Brightness.dark
+                                                      ? Theme.of(context)
+                                                          .primaryColor
+                                                      : Colors.white,
+                                                  size: 20,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
+                        );
+                      },
+                      childCount: productList.length,
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.first_page),
+                          onPressed: currentPage > 1 ? _goToFirstPage : null,
+                          color: currentPage > 1
+                              ? Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white
+                                  : Theme.of(context).primaryColor
+                              : Colors.grey,
                         ),
-                      ),
-                    );
-                  },
-                  childCount: productList.length,
+                        IconButton(
+                          icon: Icon(Icons.chevron_left),
+                          onPressed: currentPage > 1 ? _prevPage : null,
+                          color: currentPage > 1
+                              ? Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white
+                                  : Theme.of(context).primaryColor
+                              : Colors.grey,
+                        ),
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            'Trang $currentPage/$totalPages',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  Theme.of(context).textTheme.bodyLarge?.color,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.chevron_right),
+                          onPressed:
+                              currentPage < totalPages ? _nextPage : null,
+                          color: currentPage < totalPages
+                              ? Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white
+                                  : Theme.of(context).primaryColor
+                              : Colors.grey,
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.last_page),
+                          onPressed:
+                              currentPage < totalPages ? _goToLastPage : null,
+                          color: currentPage < totalPages
+                              ? Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white
+                                  : Theme.of(context).primaryColor
+                              : Colors.grey,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (isLoading)
+              Container(
+                color: Colors.black.withOpacity(0.3),
+                child: Center(
+                  child: CircularProgressIndicator(),
                 ),
               ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.first_page),
-                      onPressed: currentPage > 1 ? _goToFirstPage : null,
-                      color: currentPage > 1
-                          ? Theme.of(context).brightness == Brightness.dark
-                              ? Colors.white
-                              : Theme.of(context).primaryColor
-                          : Colors.grey,
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.chevron_left),
-                      onPressed: currentPage > 1 ? _prevPage : null,
-                      color: currentPage > 1
-                          ? Theme.of(context).brightness == Brightness.dark
-                              ? Colors.white
-                              : Theme.of(context).primaryColor
-                          : Colors.grey,
-                    ),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'Trang $currentPage/$totalPages',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).textTheme.bodyLarge?.color,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.chevron_right),
-                      onPressed: currentPage < totalPages ? _nextPage : null,
-                      color: currentPage < totalPages
-                          ? Theme.of(context).brightness == Brightness.dark
-                              ? Colors.white
-                              : Theme.of(context).primaryColor
-                          : Colors.grey,
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.last_page),
-                      onPressed:
-                          currentPage < totalPages ? _goToLastPage : null,
-                      color: currentPage < totalPages
-                          ? Theme.of(context).brightness == Brightness.dark
-                              ? Colors.white
-                              : Theme.of(context).primaryColor
-                          : Colors.grey,
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ],
         ),
-        if (isLoading)
-          Container(
-            color: Colors.black.withOpacity(0.3),
-            child: Center(
-              child: CircularProgressIndicator(),
-            ),
-          ),
-      ],
+      ),
     );
   }
 
@@ -683,7 +705,9 @@ class _CanteenScreenState extends State<CanteenScreen> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     _scrollController.dispose();
+    _debounce?.cancel();
     super.dispose();
   }
 }

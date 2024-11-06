@@ -51,20 +51,21 @@ class _VeXeScreenState extends State<VeXeScreen> {
   }
 
   Future<void> _fetchTicketInfo() async {
+    if (!mounted) return;
+
     setState(() {
-      _isLoading = true; // Set loading state
+      _isLoading = true;
     });
 
     try {
       print("Fetching ticket info for maThe: $_maThe"); // Debug print
 
       // Prepare the URL and the body for the POST request
-      final url =
-          'https://script.google.com/macros/s/AKfycbykSJAxuza1q-pPmFOez8wgdqxQiaeInLuJL_ERs1Q3Ean7DGb3-aYXBzDRsbjxIbG9/exec';
+      final url = SpreadsheetAPI.vexe;
       final body = {
         'maThe': _maThe,
         'action': 'get',
-        'copecute': ggsapiKey,
+        'copecute': SpreadApiKey,
       };
 
       // Make the POST request
@@ -80,13 +81,13 @@ class _VeXeScreenState extends State<VeXeScreen> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         print("Response data: $data"); // Debug print
+        if (!mounted) return;
         setState(() {
-          _soTien =
-              data['SoTien']?.toString() ?? '0'; // Use null-aware operator
-          _donGia =
-              data['DonGia']?.toString() ?? '0'; // Use null-aware operator
-          _lanQuet = data['LanQuet'] ?? 0; // Default to 0 if null
-          _isCardNotRegistered = false; // Reset card registration state
+          _soTien = data['SoTien']?.toString() ?? '0';
+          _donGia = data['DonGia']?.toString() ?? '0';
+          _lanQuet = data['LanQuet'] ?? 0;
+          _isCardNotRegistered = false;
+          _isLoading = false;
         });
       } else if (response.statusCode == 302) {
         // Handle redirection
@@ -100,13 +101,13 @@ class _VeXeScreenState extends State<VeXeScreen> {
             print("Response data after redirect: $data"); // Debug print
             // Check for success message
             if (data['STT'] != null) {
+              if (!mounted) return;
               setState(() {
-                _soTien = data['SoTien']?.toString() ??
-                    '0'; // Use null-aware operator
-                _donGia = data['DonGia']?.toString() ??
-                    '0'; // Use null-aware operator
-                _lanQuet = data['LanQuet'] ?? 0; // Default to 0 if null
-                _isCardNotRegistered = false; // Reset card registration state
+                _soTien = data['SoTien']?.toString() ?? '0';
+                _donGia = data['DonGia']?.toString() ?? '0';
+                _lanQuet = data['LanQuet'] ?? 0;
+                _isCardNotRegistered = false;
+                _isLoading = false;
               });
 
               print("Current SoTien: $_soTien"); // Debug print
@@ -129,6 +130,7 @@ class _VeXeScreenState extends State<VeXeScreen> {
           "Có lỗi xảy ra khi lấy thông tin thẻ."); // Show error message
     } finally {
       // Ensure loading state is reset
+      if (!mounted) return;
       setState(() {
         _isLoading = false; // Stop loading
       });
@@ -139,11 +141,10 @@ class _VeXeScreenState extends State<VeXeScreen> {
     print("Quét thẻ for maThe: $_maThe"); // Debug print
 
     // Prepare the URL and the body for the POST request
-    final url =
-        'https://script.google.com/macros/s/AKfycbykSJAxuza1q-pPmFOez8wgdqxQiaeInLuJL_ERs1Q3Ean7DGb3-aYXBzDRsbjxIbG9/exec';
+    final url = SpreadsheetAPI.vexe;
     final body = {
       'maThe': _maThe,
-      'copecute': ggsapiKey,
+      'copecute': SpreadApiKey,
       'action': 'quetthe',
     };
 
@@ -307,7 +308,7 @@ class _VeXeScreenState extends State<VeXeScreen> {
 
   Future<void> _submitCardInfo(String soTien, String donGia) async {
     final url =
-        'https://script.google.com/macros/s/AKfycbykSJAxuza1q-pPmFOez8wgdqxQiaeInLuJL_ERs1Q3Ean7DGb3-aYXBzDRsbjxIbG9/exec?action=update&maThe=$_maThe&soTien=$soTien&donGia=$donGia&copecute=$ggsapiKey';
+        '${SpreadsheetAPI.vexe}?action=update&maThe=$_maThe&soTien=$soTien&donGia=$donGia&copecute=$SpreadApiKey';
 
     // Show loading indicator
     setState(() {
@@ -367,115 +368,238 @@ class _VeXeScreenState extends State<VeXeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Lấy theme hiện tại
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Thông tin vé xe'),
+        elevation: 0,
         actions: [
           IconButton(
-            icon: Icon(Icons.settings), // Settings icon
-            onPressed: () {
-              _registerCard(); // Show the register card dialog
-            },
+            icon: Icon(Icons.settings),
+            onPressed: () => _registerCard(),
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          SvgPicture.asset(
-            'assets/AccessControl/Parking.svg',
-            width: MediaQuery.of(context).size.width,
-            height: MediaQuery.of(context).size.height,
-            fit: BoxFit.cover,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              theme.primaryColor,
+              theme.brightness == Brightness.dark
+                  ? Color(0xFF1a237e)
+                  : Color(0xFF3949ab),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  FractionallySizedBox(
-                    widthFactor:
-                        0.8, // Đặt chiều rộng Card là 80% chiều rộng màn hình
-                    child: Card(
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: _isLoading
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  SizedBox(height: 50),
-                                  CircularProgressIndicator(), // Hiển thị chỉ báo loading
-                                  SizedBox(height: 50),
-                                ],
-                              ),
-                            )
-                          : Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (_isCardNotRegistered) ...[
-                                    Text(
-                                      "Bạn chưa khai thông tin thẻ",
-                                      style: TextStyle(color: Colors.red),
-                                    ),
-                                    SizedBox(height: 8),
-                                    ElevatedButton(
-                                      onPressed: () {
-                                        _registerCard();
-                                      },
-                                      child: Text('Kê khai'),
-                                      style: ElevatedButton.styleFrom(
-                                        foregroundColor: Colors.white,
-                                        backgroundColor:
-                                            Color(0xFF2d59a4), // Màu chữ
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        Card(
+                          elevation: 8,
+                          color: theme.cardColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: AnimatedSwitcher(
+                            duration: Duration(milliseconds: 300),
+                            child: _isLoading
+                                ? Container(
+                                    key: ValueKey<bool>(_isLoading),
+                                    height: 200,
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        color: theme.primaryColor,
                                       ),
                                     ),
-                                  ] else ...[
-                                    Text('Mã thẻ: $_maThe',
-                                        style: TextStyle(fontSize: 18)),
-                                    SizedBox(height: 8),
-                                    Text('Số tiền: $_soTien',
-                                        style: TextStyle(fontSize: 18)),
-                                    SizedBox(height: 8),
-                                    Text('Đơn giá: $_donGia',
-                                        style: TextStyle(fontSize: 18)),
-                                    SizedBox(height: 8),
-                                    Text('Lần quét: $_lanQuet',
-                                        style: TextStyle(fontSize: 18)),
-                                    SizedBox(height: 16),
-                                    ElevatedButton(
-                                      onPressed: _isButtonLoading
-                                          ? null
-                                          : _quetThe, // Gọi hàm quét thẻ
-                                      child: _isButtonLoading
-                                          ? CircularProgressIndicator(
-                                              valueColor:
-                                                  AlwaysStoppedAnimation<Color>(
-                                                      Colors.white),
-                                            )
-                                          : Text('+ 1 Quét thẻ'),
-                                      style: ElevatedButton.styleFrom(
-                                        foregroundColor: Colors.white,
-                                        backgroundColor:
-                                            Color(0xFF2d59a4), // Màu nút
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
+                                  )
+                                : Container(
+                                    key: ValueKey<bool>(_isLoading),
+                                    padding: EdgeInsets.all(20),
+                                    child: _isCardNotRegistered
+                                        ? _buildUnregisteredCard(theme)
+                                        : _buildRegisteredCard(theme),
+                                  ),
+                          ),
+                        ),
+                        SizedBox(height: 30),
+                        SvgPicture.asset(
+                          'assets/AccessControl/Parking.svg',
+                          height: 200,
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUnregisteredCard(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.warning_rounded,
+          size: 50,
+          color: Colors.orange,
+        ),
+        SizedBox(height: 16),
+        Text(
+          "Bạn chưa khai thông tin thẻ",
+          style: theme.textTheme.titleLarge?.copyWith(
+            color: isDark ? Colors.white : Colors.red,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        SizedBox(height: 20),
+        ElevatedButton(
+          onPressed: _registerCard,
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+            child: Text(
+              'Kê khai ngay',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white,
               ),
             ),
           ),
-        ],
-      ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: theme.primaryColor,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(25),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRegisteredCard(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildInfoRow(
+          icon: Icons.credit_card,
+          label: 'Mã thẻ',
+          value: _maThe,
+          theme: theme,
+        ),
+        Divider(height: 24),
+        _buildInfoRow(
+          icon: Icons.account_balance_wallet,
+          label: 'Số tiền',
+          value: '$_soTien đ',
+          theme: theme,
+        ),
+        Divider(height: 24),
+        _buildInfoRow(
+          icon: Icons.price_change,
+          label: 'Đơn giá',
+          value: '$_donGia đ',
+          theme: theme,
+        ),
+        Divider(height: 24),
+        _buildInfoRow(
+          icon: Icons.history,
+          label: 'Lần quét',
+          value: _lanQuet.toString(),
+          theme: theme,
+        ),
+        SizedBox(height: 24),
+        Center(
+          child: ElevatedButton(
+            onPressed: _isButtonLoading ? null : _quetThe,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+              child: _isButtonLoading
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.add, color: Colors.white),
+                        SizedBox(width: 8),
+                        Text(
+                          'Quét thẻ',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.primaryColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    required ThemeData theme,
+  }) {
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Row(
+      children: [
+        Icon(icon, color: isDark ? Colors.white : theme.primaryColor, size: 24),
+        SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: isDark ? Colors.white70 : null,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                value,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : null,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

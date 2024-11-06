@@ -2,11 +2,11 @@ import 'dart:io';
 import 'package:hpc_students/include/config.dart';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as htmlParser;
-import 'firebase_service.dart'; // Import the new Firebase service
 
 class DataService {
-  final FirebaseService firebaseService =
-      FirebaseService(); // Initialize FirebaseService
+  final String baseScriptUrl =
+      'https://script.google.com/macros/s/AKfycbxE7TekaOTdNz30t1h_NarGXbEmBQVvYBH2qQ7RwGFaxvlGWZdYQmVGsYTvP8-ZhIOP/exec';
+  final String copecute = 'MIiwxJTx8h3a3HLYvpYpWXsywFH71f5jYP1IQo8AMUwmZr9H7y';
 
   Future<void> fetchData(String cookie, Function(Map<String, String>) onSuccess,
       Function(String) onError) async {
@@ -54,9 +54,48 @@ class DataService {
     }
   }
 
-  Future<void> saveOrUpdateToFirestore(String maSinhVien, String hoTen,
-      String trangThai, String tbcTichLuy) async {
-    await firebaseService.saveOrUpdateStudent(
-        maSinhVien, hoTen, trangThai, tbcTichLuy);
+  Future<void> saveOrUpdateToSheet(String maSinhVien, String hoTen,
+      String trangThai, String tbcTichLuy, String tinChiTichLuy) async {
+    try {
+      var client = http.Client();
+      try {
+        var response = await client.post(
+          Uri.parse(baseScriptUrl),
+          body: {
+            'copecute': copecute,
+            'action': 'updateProfile',
+            'mssv': maSinhVien,
+            'fullName': hoTen,
+            'tbc': tbcTichLuy,
+            'tinChiTichLuy': tinChiTichLuy,
+            'tbctimestamp': DateTime.now().toIso8601String(),
+          },
+          headers: {
+            'Accept': '*/*',
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+        );
+
+        if (response.statusCode == 302 || response.statusCode == 303) {
+          String? redirectUrl = response.headers['location'];
+          if (redirectUrl != null) {
+            response = await client.get(Uri.parse(redirectUrl));
+          }
+        }
+
+        print('Status code: ${response.statusCode}');
+        print('Response body: ${response.body}');
+
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          print('Cập nhật dữ liệu lên Google Sheet thành công');
+        } else {
+          print('Lỗi khi cập nhật dữ liệu: ${response.statusCode}');
+        }
+      } finally {
+        client.close();
+      }
+    } catch (e) {
+      print('Lỗi khi gửi request: $e');
+    }
   }
 }

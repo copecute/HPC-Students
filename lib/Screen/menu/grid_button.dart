@@ -137,6 +137,18 @@ class GridButton extends StatelessWidget {
       },
       {
         'id': 16,
+        'icon': Icons.book,
+        'label': 'Sách thư viện',
+        'color': Colors.green
+      },
+      {
+        'id': 17,
+        'icon': Icons.shopping_bag,
+        'label': 'Chợ sinh viên HPC',
+        'color': Colors.blue
+      },
+      {
+        'id': 18,
         'icon': Icons.settings,
         'label': 'Cài đặt',
         'color': Colors.grey

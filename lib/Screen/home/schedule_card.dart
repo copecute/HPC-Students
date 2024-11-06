@@ -49,43 +49,58 @@ class _ScheduleCardState extends State<ScheduleCard> {
   }
 
   Future<void> fetchWeeks(String year) async {
+    if (!mounted) return;
+
     setState(() {
       isLoadingWeeks = true;
     });
 
-    final response = await http.get(
-      Uri.parse('$baseUrl/TraCuuLichHoc/LoadTuanThu?Nam_hoc=$year'),
-      headers: {
-        'Cookie':
-            Provider.of<CookieProvider>(context, listen: false).getCookie() ??
-                '',
-      },
-    );
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/TraCuuLichHoc/LoadTuanThu?Nam_hoc=$year'),
+        headers: {
+          'Cookie':
+              Provider.of<CookieProvider>(context, listen: false).getCookie() ??
+                  '',
+        },
+      );
 
-    if (response.statusCode == 200) {
-      setState(() {
-        weeks = [];
-        var document = html.parse(response.body);
-        var options = document.querySelectorAll('select#cmbTuanThu option');
+      if (!mounted) return;
 
-        for (var option in options) {
-          var value = option.attributes['value'];
-          var text = option.text;
-          if (value != '-1') {
-            weeks.add({'value': value!, 'text': text});
+      if (response.statusCode == 200) {
+        setState(() {
+          weeks = [];
+          var document = html.parse(response.body);
+          var options = document.querySelectorAll('select#cmbTuanThu option');
+
+          for (var option in options) {
+            var value = option.attributes['value'];
+            var text = option.text;
+            if (value != '-1') {
+              weeks.add({'value': value!, 'text': text});
+            }
           }
-        }
-        isLoadingWeeks = false;
-      });
+          isLoadingWeeks = false;
+        });
 
-      if (weeks.isNotEmpty) {
-        calculateWeekFromDate(selectedDate!);
+        if (weeks.isNotEmpty) {
+          calculateWeekFromDate(selectedDate!);
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            isLoadingWeeks = false;
+          });
+        }
+        throw Exception('Failed to load weeks');
       }
-    } else {
-      setState(() {
-        isLoadingWeeks = false;
-      });
-      throw Exception('Failed to load weeks');
+    } catch (e) {
+      print('Error fetching weeks: $e');
+      if (mounted) {
+        setState(() {
+          isLoadingWeeks = false;
+        });
+      }
     }
   }
 
@@ -113,21 +128,23 @@ class _ScheduleCardState extends State<ScheduleCard> {
   }
 
   Future<void> fetchSchedule() async {
+    if (!mounted) return;
+
     if (htmlResponse != null) {
-      // Check if there's already cached data
       setState(() {
-        isLoadingSchedule = false; // Don't show loading if cached data exists
+        isLoadingSchedule = false;
       });
-      return; // Exit early if cached data is available
+      return;
     }
 
     setState(() {
-      isLoadingSchedule = true; // Show loading if no cached data
+      isLoadingSchedule = true;
     });
 
     String? cookie =
         Provider.of<CookieProvider>(context, listen: false).getCookie();
     if (cookie == null || cookie.isEmpty) {
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => LoginScreen()),
@@ -138,37 +155,47 @@ class _ScheduleCardState extends State<ScheduleCard> {
       return;
     }
 
-    Map<String, String> postData = {
-      'Nam_hoc': getCurrentAcademicYear(),
-      'Tuan_thu': selectedWeek ?? '',
-      'selectedDate': DateFormat('yyyy-MM-dd')
-          .format(selectedDate!), // Pass the selected date
-    };
+    try {
+      Map<String, String> postData = {
+        'Nam_hoc': getCurrentAcademicYear(),
+        'Tuan_thu': selectedWeek ?? '',
+        'selectedDate': DateFormat('yyyy-MM-dd').format(selectedDate!),
+      };
 
-    final response = await http.post(
-      Uri.parse(url),
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Cookie': cookie,
-      },
-      body: postData,
-    );
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Cookie': cookie,
+        },
+        body: postData,
+      );
 
-    if (response.statusCode == 200) {
-      setState(() {
-        htmlResponse = response.body;
-        isLoadingSchedule = false;
-      });
+      if (!mounted) return;
 
-      // Cache the HTML response
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-          'cachedScheduleCard', htmlResponse!); // Updated variable name
-    } else {
-      setState(() {
-        isLoadingSchedule = false;
-      });
-      throw Exception('Failed to fetch schedule');
+      if (response.statusCode == 200) {
+        setState(() {
+          htmlResponse = response.body;
+          isLoadingSchedule = false;
+        });
+
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('cachedScheduleCard', htmlResponse!);
+      } else {
+        if (mounted) {
+          setState(() {
+            isLoadingSchedule = false;
+          });
+        }
+        throw Exception('Failed to fetch schedule');
+      }
+    } catch (e) {
+      print('Error fetching schedule: $e');
+      if (mounted) {
+        setState(() {
+          isLoadingSchedule = false;
+        });
+      }
     }
   }
 
@@ -340,9 +367,10 @@ class _ScheduleCardState extends State<ScheduleCard> {
   }
 
   Future<void> refreshData() async {
-    // Refresh the weeks and schedule
+    if (!mounted) return;
+
     await fetchWeeks(getCurrentAcademicYear());
-    if (selectedWeek != null) {
+    if (selectedWeek != null && mounted) {
       await fetchSchedule();
     }
   }

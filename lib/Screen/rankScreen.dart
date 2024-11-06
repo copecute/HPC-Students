@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:hpc_students/include/config.dart';
 
 class RankScreen extends StatefulWidget {
   @override
@@ -9,61 +10,95 @@ class RankScreen extends StatefulWidget {
 }
 
 class _RankScreenState extends State<RankScreen> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   List<Map<String, dynamic>> _rankList = [];
   bool _isLoading = true;
-  bool _isDataFetched = false; // Add a flag to check if data is already fetched
+  bool _isDataFetched = false;
 
   @override
   void initState() {
     super.initState();
-    _loadData(); // Load data on initialization
+    _loadData();
   }
 
   Future<void> _loadData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? cachedData = prefs.getString('cachedRankings'); // Load cached data
+    String? cachedData = prefs.getString('cachedRankings');
 
     if (cachedData != null) {
-      // If cached data exists, parse it and update the UI
-      List<dynamic> jsonData = jsonDecode(cachedData); // Decode JSON
-      _rankList = List<Map<String, dynamic>>.from(jsonData.map((item) =>
-          Map<String, dynamic>.from(
-              item))); // Cast to List<Map<String, dynamic>>
+      List<dynamic> jsonData = jsonDecode(cachedData);
+      _rankList = List<Map<String, dynamic>>.from(
+          jsonData.map((item) => Map<String, dynamic>.from(item)));
       setState(() {
-        _isLoading = false; // Set loading to false
-        _isDataFetched = true; // Mark data as fetched
+        _isLoading = false;
+        _isDataFetched = true;
       });
     } else {
-      // If no cached data, fetch from Firestore
       await _fetchRankings();
     }
   }
 
   Future<void> _fetchRankings() async {
     try {
-      QuerySnapshot snapshot = await _firestore
-          .collection('HPCRanks')
-          .orderBy('TBC', descending: true)
-          .limit(10) // so lượng người muốn hiển thị
-          .get();
+      final url = SpreadsheetAPI.profiles;
+      final body = {
+        'copecute': SpreadApiKey,
+        'action': 'rankTBC',
+      };
 
-      setState(() {
-        _rankList = snapshot.docs.map((doc) {
-          return {
-            'fullname': doc['fullname'],
-            'TBC': doc['TBC'],
-            'Trangthai': doc['Trangthai'],
-          };
-        }).toList();
-        _isLoading = false;
-        _isDataFetched = true; // Set the flag to true after fetching
-      });
+      final response = await http.post(
+        Uri.parse(url),
+        body: body,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      );
 
-      // Cache the data
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-          'cachedRankings', jsonEncode(_rankList)); // Save to cache
+      print("Response status: ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print("Response data: $data");
+
+        setState(() {
+          _rankList =
+              List<Map<String, dynamic>>.from(data['rank'].map((item) => {
+                    'fullname': item['FullName'],
+                    'TBC': item['TBC'],
+                    'Avatar': item['Avatar'],
+                  }));
+          _isLoading = false;
+          _isDataFetched = true;
+        });
+
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('cachedRankings', jsonEncode(_rankList));
+      } else if (response.statusCode == 302) {
+        print("Redirected to: ${response.headers['location']}");
+        final redirectUrl = response.headers['location'];
+        if (redirectUrl != null) {
+          final redirectResponse = await http.get(Uri.parse(redirectUrl));
+          if (redirectResponse.statusCode == 200) {
+            final data = json.decode(redirectResponse.body);
+            print("Response data after redirect: $data");
+
+            setState(() {
+              _rankList =
+                  List<Map<String, dynamic>>.from(data['rank'].map((item) => {
+                        'fullname': item['FullName'],
+                        'TBC': item['TBC'],
+                        'Avatar': item['Avatar'],
+                      }));
+              _isLoading = false;
+              _isDataFetched = true;
+            });
+
+            SharedPreferences prefs = await SharedPreferences.getInstance();
+            await prefs.setString('cachedRankings', jsonEncode(_rankList));
+          }
+        }
+      } else {
+        throw Exception('Failed to load rankings');
+      }
     } catch (e) {
       print('Error fetching rankings: $e');
       setState(() {
@@ -74,10 +109,10 @@ class _RankScreenState extends State<RankScreen> {
 
   Future<void> refreshData() async {
     setState(() {
-      _isLoading = true; // Show loading state while fetching data
-      _isDataFetched = false; // Mark data as not fetched
+      _isLoading = true;
+      _isDataFetched = false;
     });
-    await _fetchRankings(); // Fetch data again
+    await _fetchRankings();
   }
 
   Widget _buildRankTile(Map<String, dynamic> rankData, int index) {
@@ -88,6 +123,9 @@ class _RankScreenState extends State<RankScreen> {
         color: Colors.red[700],
         child: ListTile(
           leading: CircleAvatar(
+            backgroundImage: rankData['Avatar'] != null
+                ? NetworkImage(rankData['Avatar'])
+                : AssetImage('assets/avatar.png') as ImageProvider,
             child: Text('🥇', style: TextStyle(fontSize: 24)),
             backgroundColor: Colors.amber[700],
           ),
